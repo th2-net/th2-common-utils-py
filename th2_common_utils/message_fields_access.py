@@ -17,10 +17,6 @@ from pprint import pformat
 from th2_grpc_common.common_pb2 import Message, Value, ListValue
 from th2_common_utils.convertors import message_to_dict, _value_get as value_get
 
-"""
-This patch provides a convenient way for Message fields access.  
-The patch is backward compatible.
-"""
 
 # =========================
 # Value
