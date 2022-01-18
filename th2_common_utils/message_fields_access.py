@@ -13,16 +13,23 @@
 #   limitations under the License.
 
 
-from pprint import pformat
 from th2_grpc_common.common_pb2 import Message, Value, ListValue
-from th2_common_utils.convertors import message_to_dict, _value_get as value_get
 
 
 # =========================
 # Value
 # =========================
 
-Value.__get__ = value_get
+def _value_get(self, instance, item):
+    try:
+        return getattr(self, self.WhichOneof('kind'))
+    except IndexError:
+        # If you request protobuf class Value without any values inside, you will get IndexError.
+        # Occurs when requesting a non-existent key in the dict.
+        raise KeyError(item)
+
+
+Value.__get__ = _value_get
 
 
 # =========================
@@ -30,43 +37,30 @@ Value.__get__ = value_get
 # =========================
 
 def listvalue_getitem(self, idx):
-    # values -  class 'google.protobuf.pyext._message.RepeatedCompositeContainer (Value inside)
-    v: Value = getattr(self, 'values')[idx]
-    return v.__get__(v, idx)
+    value = self.values[idx]
+    return value.__get__(value, idx)
 
 
 def listvalue_len(self):
     return len(self.values)
 
 
-def listvalue_repr(self):
-    val_lst = list(self.values)
-    return str([v.__get__('', v) for v in val_lst])
-
-
 ListValue.__getitem__ = listvalue_getitem
 ListValue.__len__ = listvalue_len
-ListValue.__repr__ = listvalue_repr
 
 
 # =========================
 # Message
 # =========================
 
-def msg_getitem(self, item):
-    v: Value = self.fields[item]
-    return v.__get__(v, item)
+def message_getitem(self, item):
+    value = self.fields[item]
+    return value.__get__(value, item)
 
 
 def message_contains(self, item):
     return item in self.fields
 
 
-def message_repr(self):
-    # Used message_to_dict to get more human readable repr output.
-    return pformat(message_to_dict(self))
-
-
-Message.__getitem__ = msg_getitem
+Message.__getitem__ = message_getitem
 Message.__contains__ = message_contains
-Message.__repr__ = message_repr

@@ -13,8 +13,6 @@
 # limitations under the License.
 
 
-import copy
-
 from typing import List, Callable
 
 from google.protobuf.duration_pb2 import Duration
@@ -22,78 +20,36 @@ from th2_grpc_common.common_pb2 import Message, ListValue, Value, MessageMetadat
     RootMessageFilter, MessageFilter, MetadataFilter, RootComparisonSettings, ValueFilter, ListValueFilter, SimpleList
 
 
-def message_to_dict(msg):
-    """
-    Convert protobuf class Message to dict.
-
-    Note, you will lose all metadata of the Message.
-    """
-
-    if isinstance(msg, Message):
-        d = {}
-        for k in (msg.fields.keys()):
-            fk = _value_get(msg.fields[k], None, k)
-            d[k] = message_to_dict(fk)
-    elif isinstance(msg, ListValue):
-        return [message_to_dict(_value_get(v, None, None)) for v in tuple(msg.values)]
-    elif isinstance(msg, Value):
-        return _value_get(msg, None, None)
-    else:
-        return msg
-
-    return d
+def message_to_dict_convert_value(value):
+    if value.WhichOneof('kind') == 'simple_value':
+        return value.simple_value
+    elif value.WhichOneof('kind') == 'list_value':
+        return [message_to_dict_convert_value(list_item) for list_item in value.list_value.values]
+    elif value.WhichOneof('kind') == 'message_value':
+        return {field: message_to_dict_convert_value(value.message_value.fields[field])
+                for field in value.message_value.fields}
 
 
-def dict_to_message(fields: dict, message_type='none_type', session_alias=''):
-    """Convert dict to protobuf class Message."""
-
-    fields = copy.deepcopy(fields)
-    for field, f_val in fields.items():
-        if isinstance(f_val, (str, int, float)) or f_val is None:
-            fields[field] = Value(simple_value=str(f_val))
-        elif isinstance(f_val, dict):
-            fields[field] = Value(message_value=dict_to_message(f_val))
-        elif isinstance(f_val, (list, tuple)):
-            lst = []
-            for v in f_val:
-                lst.append(Value(message_value=dict_to_message(v)))
-            fields[field] = Value(list_value=ListValue(values=lst))
-        else:
-            fields[field] = Value(message_value=dict_to_message(vars(f_val)))
-    return Message(
-        metadata=MessageMetadata(
-            message_type=message_type,
-            id=MessageID(
-                connection_id=ConnectionID(session_alias=session_alias))),
-        fields=fields)
+def message_to_dict(message):
+    # Note, you will lose all metadata of the Message.
+    return {field: message_to_dict_convert_value(message.fields[field]) for field in message.fields}
 
 
-def _value_get(self, instance, item):
-    """__get__ descriptor for protobuf class Value."""
-
-    try:
-        return getattr(self, self.ListFields()[0][0].name)
-    except IndexError:
-        # If you request protobuf class Value without any values inside, you will get IndexError.
-        # Occurs when requesting a non-existent key in the dict.
-        return None
-
-
-def convert_message_value(value):
+def dict_to_message_convert_value(value):
     if isinstance(value, Value):
         return value
     elif isinstance(value, (str, int, float)):
         return Value(simple_value=str(value))
     elif isinstance(value, list):
-        return Value(list_value=ListValue(values=[convert_message_value(x) for x in value]))
+        return Value(list_value=ListValue(values=[dict_to_message_convert_value(x) for x in value]))
     elif isinstance(value, dict):
-        return Value(message_value=Message(fields={key: convert_message_value(value[key]) for key in value}))
+        return Value(message_value=Message(fields={key: dict_to_message_convert_value(value[key]) for key in value}))
 
 
-def create_message(fields: dict, session_alias=None, message_type=None):
+def dict_to_message(fields: dict, session_alias=None, message_type=None):
     return Message(metadata=MessageMetadata(id=MessageID(connection_id=ConnectionID(session_alias=session_alias)),
                                             message_type=message_type),
-                   fields={field: convert_message_value(fields[field]) for field in fields})
+                   fields={field: dict_to_message_convert_value(fields[field]) for field in fields})
 
 
 def convert_filter_value(value, message_type=None, direction=None, values=False, metadata=False):
