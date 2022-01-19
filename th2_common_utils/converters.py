@@ -19,13 +19,16 @@ from google.protobuf.duration_pb2 import Duration
 from th2_grpc_common.common_pb2 import Message, ListValue, Value, MessageMetadata, MessageID, ConnectionID, \
     RootMessageFilter, MessageFilter, MetadataFilter, RootComparisonSettings, ValueFilter, ListValueFilter, SimpleList
 
+from th2_common_utils.message_fields_access import ValueType
+
 
 def message_to_dict_convert_value(value):
-    if value.WhichOneof('kind') == 'simple_value':
+    value_kind = value.WhichOneof(ValueType.WHICH_ONE_OF.value)
+    if value_kind == ValueType.SIMPLE.value:
         return value.simple_value
-    elif value.WhichOneof('kind') == 'list_value':
+    elif value_kind == ValueType.LIST.value:
         return [message_to_dict_convert_value(list_item) for list_item in value.list_value.values]
-    elif value.WhichOneof('kind') == 'message_value':
+    elif value_kind == ValueType.MESSAGE.value:
         return {field: message_to_dict_convert_value(value.message_value.fields[field])
                 for field in value.message_value.fields}
 
@@ -99,17 +102,18 @@ def create_root_message_filter(message_type=None,
                                  decimal_precision=decimal_precision))
 
 
-def convert_value_into_typed_field(field_value, typed_field_value):
-    if field_value.WhichOneof('kind') == 'simple_value':
-        return type(typed_field_value)(field_value.simple_value)
-    elif field_value.WhichOneof('kind') == 'list_value':
-        return [convert_value_into_typed_field(list_item, typed_field_value.add())
-                for list_item in field_value.list_value.values]
-    elif field_value.WhichOneof('kind') == 'message_value':
-        fields_typed = {field: convert_value_into_typed_field(field_value.message_value.fields[field],
-                                                              getattr(typed_field_value, field))
-                        for field in field_value.message_value.fields}
-        return type(typed_field_value)(**fields_typed)
+def convert_value_into_typed_field(value, typed_value):
+    field_value_kind = value.WhichOneof(ValueType.WHICH_ONE_OF.value)
+    if field_value_kind == ValueType.SIMPLE.value:
+        return type(typed_value)(value.simple_value)
+    elif field_value_kind == ValueType.LIST.value:
+        return [convert_value_into_typed_field(list_item, typed_value.add()) for list_item in value.list_value.values]
+    elif field_value_kind == ValueType.MESSAGE.value:
+        fields_typed = {
+            field: convert_value_into_typed_field(value.message_value.fields[field], getattr(typed_value, field))
+            for field in value.message_value.fields
+        }
+        return type(typed_value)(**fields_typed)
 
 
 def create_typed_message_from_message(message, message_type: Callable):
