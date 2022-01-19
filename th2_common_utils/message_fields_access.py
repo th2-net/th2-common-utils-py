@@ -13,19 +13,10 @@
 #   limitations under the License.
 
 
-import enum
 from pprint import pformat
 
-from th2_common_utils.converters import message_to_dict
+from th2_common_utils.converters import message_to_dict, ValueType
 from th2_grpc_common.common_pb2 import Value, ListValue, Message
-
-
-class ValueType(enum.Enum):
-    WHICH_ONE_OF = 'kind'
-
-    SIMPLE = 'simple_value'
-    LIST = 'list_value'
-    MESSAGE = 'message_value'
 
 
 # =========================

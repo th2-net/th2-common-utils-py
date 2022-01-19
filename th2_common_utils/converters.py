@@ -13,13 +13,20 @@
 # limitations under the License.
 
 
+import enum
 from typing import List, Callable
 
 from google.protobuf.duration_pb2 import Duration
 from th2_grpc_common.common_pb2 import Message, ListValue, Value, MessageMetadata, MessageID, ConnectionID, \
     RootMessageFilter, MessageFilter, MetadataFilter, RootComparisonSettings, ValueFilter, ListValueFilter, SimpleList
 
-from th2_common_utils.message_fields_access import ValueType
+
+class ValueType(enum.Enum):
+    WHICH_ONE_OF = 'kind'
+
+    SIMPLE = 'simple_value'
+    LIST = 'list_value'
+    MESSAGE = 'message_value'
 
 
 def message_to_dict_convert_value(value):
