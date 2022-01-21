@@ -21,7 +21,7 @@ from th2_grpc_common.common_pb2 import Message, ListValue, Value, MessageMetadat
     RootMessageFilter, MessageFilter, MetadataFilter, RootComparisonSettings, ValueFilter, ListValueFilter, SimpleList
 
 
-class ValueType(enum.Enum):
+class ValueType(str, enum.Enum):
     WHICH_ONE_OF = 'kind'
 
     SIMPLE = 'simple_value'
@@ -30,17 +30,17 @@ class ValueType(enum.Enum):
 
 
 def message_to_dict_convert_value(value):
-    value_kind = value.WhichOneof(ValueType.WHICH_ONE_OF.value)
-    if value_kind == ValueType.SIMPLE.value:
+    value_kind = value.WhichOneof(ValueType.WHICH_ONE_OF)
+    if value_kind == ValueType.SIMPLE:
         return value.simple_value
-    elif value_kind == ValueType.LIST.value:
+    elif value_kind == ValueType.LIST:
         return [message_to_dict_convert_value(list_item) for list_item in value.list_value.values]
-    elif value_kind == ValueType.MESSAGE.value:
+    elif value_kind == ValueType.MESSAGE:
         return {field: message_to_dict_convert_value(value.message_value.fields[field])
                 for field in value.message_value.fields}
 
 
-def message_to_dict(message):
+def message_to_dict(message: Message):
     # Note, you will lose all metadata of the Message.
     return {field: message_to_dict_convert_value(message.fields[field]) for field in message.fields}
 
@@ -84,13 +84,13 @@ def convert_filter_value(value, message_type=None, direction=None, values=False,
                                          direction=direction))
 
 
-def create_root_message_filter(message_type=None,
-                               message_filter=None,
-                               metadata_filter=None,
-                               ignore_fields: List[str] = None,
-                               check_repeating_group_order: bool = None,
-                               time_precision: Duration = None,
-                               decimal_precision: str = None):
+def dict_to_root_message_filter(message_type=None,
+                                message_filter=None,
+                                metadata_filter=None,
+                                ignore_fields: List[str] = None,
+                                check_repeating_group_order: bool = None,
+                                time_precision: Duration = None,
+                                decimal_precision: str = None):
     if message_filter is None:
         message_filter = {}
     if metadata_filter is None:
@@ -110,12 +110,12 @@ def create_root_message_filter(message_type=None,
 
 
 def convert_value_into_typed_field(value, typed_value):
-    field_value_kind = value.WhichOneof(ValueType.WHICH_ONE_OF.value)
-    if field_value_kind == ValueType.SIMPLE.value:
+    field_value_kind = value.WhichOneof(ValueType.WHICH_ONE_OF)
+    if field_value_kind == ValueType.SIMPLE:
         return type(typed_value)(value.simple_value)
-    elif field_value_kind == ValueType.LIST.value:
+    elif field_value_kind == ValueType.LIST:
         return [convert_value_into_typed_field(list_item, typed_value.add()) for list_item in value.list_value.values]
-    elif field_value_kind == ValueType.MESSAGE.value:
+    elif field_value_kind == ValueType.MESSAGE:
         fields_typed = {
             field: convert_value_into_typed_field(value.message_value.fields[field], getattr(typed_value, field))
             for field in value.message_value.fields
@@ -123,7 +123,7 @@ def convert_value_into_typed_field(value, typed_value):
         return type(typed_value)(**fields_typed)
 
 
-def create_typed_message_from_message(message, message_type: Callable):
+def message_to_typed_message(message, message_type: Callable):
     response_fields = [field.name for field in message_type().DESCRIPTOR.fields]
     fields_typed = {field: convert_value_into_typed_field(message.fields[field], getattr(message_type(), field))
                     for field in response_fields}

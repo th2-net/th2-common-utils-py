@@ -25,7 +25,7 @@ from th2_grpc_common.common_pb2 import Value, ListValue, Message
 
 def _value_get(self, item):
     try:
-        return getattr(self, self.WhichOneof(ValueType.WHICH_ONE_OF.value))
+        return getattr(self, self.WhichOneof(ValueType.WHICH_ONE_OF))
     except TypeError:
         # If you request protobuf class Value without the item inside, you will get TypeError.
         # Occurs when requesting a non-existent key in the dict.

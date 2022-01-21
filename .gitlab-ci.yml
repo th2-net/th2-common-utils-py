@@ -1,21 +1,8 @@
 variables:
-  APP_NAME: 'th2-common-utils'
-  DOCKER_PUBLISH_ENABLED: 'false'
+  PYPI_PUBLISH_ENABLED: "true"
+  DOCKER_PUBLISH_ENABLED: "false"
 
 include:
-  - project: 'vivarium/th2/pipelines'
-    ref: master
-    file: '/.gitlab-ci-common.yml'
-
-build:
-  extends: .build-template
-  variables:
-    DOCKER_INTERMEDIATE_TAG: "${CI_COMMIT_SHA}"
-    DOCKER_BUILD_ARGS: >-
-      --build-arg pypi_repository_url=${PYPI_REPOSITORY_URL}
-      --build-arg pypi_user=${PYPI_USER}
-      --build-arg pypi_password=${PYPI_PASSWORD}
-      --build-arg app_name=${APP_NAME}
-      --build-arg app_version=${APP_VERSION}
-  dependencies:
-    - makeMetaEnv
+  - project: "vivarium/th2/pipelines"
+    ref: v2
+    file: "/.gitlab-ci-python.yml"
