@@ -14,9 +14,10 @@
 
 
 import enum
-from typing import List, Callable
+from typing import List, Callable, Union, Dict
 
 from google.protobuf.duration_pb2 import Duration
+from th2_common_utils.tree_table import TreeTable, Collection, Row
 from th2_grpc_common.common_pb2 import Message, ListValue, Value, MessageMetadata, MessageID, ConnectionID, \
     RootMessageFilter, MessageFilter, MetadataFilter, RootComparisonSettings, ValueFilter, ListValueFilter, SimpleList
 
@@ -29,40 +30,40 @@ class ValueType(str, enum.Enum):
     MESSAGE = 'message_value'
 
 
-def message_to_dict_convert_value(value):
+def _message_to_dict_convert_value(value):
     value_kind = value.WhichOneof(ValueType.WHICH_ONE_OF)
     if value_kind == ValueType.SIMPLE:
         return value.simple_value
     elif value_kind == ValueType.LIST:
-        return [message_to_dict_convert_value(list_item) for list_item in value.list_value.values]
+        return [_message_to_dict_convert_value(list_item) for list_item in value.list_value.values]
     elif value_kind == ValueType.MESSAGE:
-        return {field: message_to_dict_convert_value(value.message_value.fields[field])
+        return {field: _message_to_dict_convert_value(value.message_value.fields[field])
                 for field in value.message_value.fields}
 
 
 def message_to_dict(message: Message):
     # Note, you will lose all metadata of the Message.
-    return {field: message_to_dict_convert_value(message.fields[field]) for field in message.fields}
+    return {field: _message_to_dict_convert_value(message.fields[field]) for field in message.fields}
 
 
-def dict_to_message_convert_value(value):
+def _dict_to_message_convert_value(value):
     if isinstance(value, Value):
         return value
     elif isinstance(value, (str, int, float)):
         return Value(simple_value=str(value))
     elif isinstance(value, list):
-        return Value(list_value=ListValue(values=[dict_to_message_convert_value(x) for x in value]))
+        return Value(list_value=ListValue(values=[_dict_to_message_convert_value(x) for x in value]))
     elif isinstance(value, dict):
-        return Value(message_value=Message(fields={key: dict_to_message_convert_value(value[key]) for key in value}))
+        return Value(message_value=Message(fields={key: _dict_to_message_convert_value(value[key]) for key in value}))
 
 
 def dict_to_message(fields: dict, session_alias=None, message_type=None):
     return Message(metadata=MessageMetadata(id=MessageID(connection_id=ConnectionID(session_alias=session_alias)),
                                             message_type=message_type),
-                   fields={field: dict_to_message_convert_value(fields[field]) for field in fields})
+                   fields={field: _dict_to_message_convert_value(fields[field]) for field in fields})
 
 
-def convert_filter_value(value, message_type=None, direction=None, values=False, metadata=False):
+def _convert_filter_value(value, message_type=None, direction=None, values=False, metadata=False):
     if isinstance(value, ValueFilter):
         return value
     elif isinstance(value, (str, int, float)) and values is True:
@@ -71,15 +72,15 @@ def convert_filter_value(value, message_type=None, direction=None, values=False,
         return MetadataFilter.SimpleFilter(value=str(value))
     elif isinstance(value, list) and values is True:
         return ValueFilter(list_filter=ListValueFilter(
-            values=[convert_filter_value(x, values=values, metadata=metadata) for x in value]))
+            values=[_convert_filter_value(x, values=values, metadata=metadata) for x in value]))
     elif isinstance(value, list) and metadata is True:
         return MetadataFilter.SimpleFilter(simple_list=SimpleList(simple_values=value))
     elif isinstance(value, dict):
         return ValueFilter(
             message_filter=MessageFilter(messageType=message_type,
-                                         fields={key: convert_filter_value(value[key],
-                                                                           values=values,
-                                                                           metadata=metadata)
+                                         fields={key: _convert_filter_value(value[key],
+                                                                            values=values,
+                                                                            metadata=metadata)
                                                  for key in value},
                                          direction=direction))
 
@@ -97,10 +98,10 @@ def dict_to_root_message_filter(message_type=None,
         metadata_filter = {}
     return RootMessageFilter(messageType=message_type,
                              message_filter=MessageFilter(fields={
-                                 field: convert_filter_value(message_filter[field], values=True)
+                                 field: _convert_filter_value(message_filter[field], values=True)
                                  for field in message_filter}),
                              metadata_filter=MetadataFilter(property_filters={
-                                 value: convert_filter_value(metadata_filter[value], metadata=True)
+                                 value: _convert_filter_value(metadata_filter[value], metadata=True)
                                  for value in metadata_filter}),
                              comparison_settings=RootComparisonSettings(
                                  ignore_fields=ignore_fields,
@@ -109,15 +110,15 @@ def dict_to_root_message_filter(message_type=None,
                                  decimal_precision=decimal_precision))
 
 
-def convert_value_into_typed_field(value, typed_value):
+def _convert_value_into_typed_field(value, typed_value):
     field_value_kind = value.WhichOneof(ValueType.WHICH_ONE_OF)
     if field_value_kind == ValueType.SIMPLE:
         return type(typed_value)(value.simple_value)
     elif field_value_kind == ValueType.LIST:
-        return [convert_value_into_typed_field(list_item, typed_value.add()) for list_item in value.list_value.values]
+        return [_convert_value_into_typed_field(list_item, typed_value.add()) for list_item in value.list_value.values]
     elif field_value_kind == ValueType.MESSAGE:
         fields_typed = {
-            field: convert_value_into_typed_field(value.message_value.fields[field], getattr(typed_value, field))
+            field: _convert_value_into_typed_field(value.message_value.fields[field], getattr(typed_value, field))
             for field in value.message_value.fields
         }
         return type(typed_value)(**fields_typed)
@@ -125,6 +126,42 @@ def convert_value_into_typed_field(value, typed_value):
 
 def message_to_typed_message(message, message_type: Callable):
     response_fields = [field.name for field in message_type().DESCRIPTOR.fields]
-    fields_typed = {field: convert_value_into_typed_field(message.fields[field], getattr(message_type(), field))
+    fields_typed = {field: _convert_value_into_typed_field(message.fields[field], getattr(message_type(), field))
                     for field in response_fields}
     return message_type(**fields_typed)
+
+
+class TableColumnName(str, enum.Enum):
+    FIELD_VALUE = 'Field Value'
+
+
+def _message_to_table_convert_value(value):
+    if isinstance(value, (str, int, float)):
+        table_entity = Row()
+        table_entity.add_column(TableColumnName.FIELD_VALUE, value)
+        return table_entity
+
+    elif isinstance(value, list):
+        table_entity = Collection()
+        for index, item in enumerate(value):
+            table_entity.add_row(index, _message_to_table_convert_value(item))
+        return table_entity.sort()
+
+    elif isinstance(value, dict):
+        table_entity = Collection()
+        for item in value:
+            table_entity.add_row(item, _message_to_table_convert_value(value[item]))
+        return table_entity.sort()
+
+
+def message_to_table(message: Union[Message, Dict]):
+    if isinstance(message, Message):
+        message = message_to_dict(message)
+
+    table = TreeTable()
+
+    for field_name in message:
+        table_entity = _message_to_table_convert_value(message[field_name])
+        table.add_row(field_name, table_entity)
+
+    return table.sort()
