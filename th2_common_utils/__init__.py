@@ -14,4 +14,5 @@
 
 
 from .message_fields_access import *
-from .converters import message_to_dict, dict_to_message, dict_to_root_message_filter, message_to_typed_message
+from .converters import message_to_dict, dict_to_message, dict_to_root_message_filter, message_to_typed_message, \
+    message_to_table
