@@ -31,3 +31,5 @@ time_precision, decimal_precision)` - all arguments are optional.
 * `message_to_typed_message(message, message_type)` - where:
     * *message* - Message object;
     * *message_type* - TypedMessage **class object**.
+* `message_to_table(message)` - where:
+    * *message* - Message object or dict.

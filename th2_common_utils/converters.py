@@ -1,16 +1,16 @@
-# Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+#   Copyright 2022-2022 Exactpro (Exactpro Systems Limited)
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 
 
 import enum
@@ -41,8 +41,18 @@ def _message_to_dict_convert_value(value):
                 for field in value.message_value.fields}
 
 
-def message_to_dict(message: Message):
-    # Note, you will lose all metadata of the Message.
+def message_to_dict(message: Message) -> Dict:
+    """Converts th2-message to a dict.
+
+    Note:
+        You will lose all metadata of the Message.
+
+    :param message: th2-message
+
+    :rtype: dict
+    :return: message fields as a dict
+    """
+
     return {field: _message_to_dict_convert_value(message.fields[field]) for field in message.fields}
 
 
@@ -57,7 +67,17 @@ def _dict_to_message_convert_value(value):
         return Value(message_value=Message(fields={key: _dict_to_message_convert_value(value[key]) for key in value}))
 
 
-def dict_to_message(fields: dict, session_alias=None, message_type=None):
+def dict_to_message(fields: dict, session_alias: str = None, message_type: str = None) -> Message:
+    """Converts a dict to th2-message with metadata.
+
+    :param fields: message fields
+    :param session_alias: message session alias
+    :param message_type: message type
+
+    :rtype: Message
+    :return: th2-message with metadata
+    """
+
     return Message(metadata=MessageMetadata(id=MessageID(connection_id=ConnectionID(session_alias=session_alias)),
                                             message_type=message_type),
                    fields={field: _dict_to_message_convert_value(fields[field]) for field in fields})
@@ -85,24 +105,36 @@ def _convert_filter_value(value, message_type=None, direction=None, values=False
                                          direction=direction))
 
 
-def dict_to_root_message_filter(message_type=None,
-                                message_filter=None,
-                                metadata_filter=None,
+def dict_to_root_message_filter(message_type: str = None,
+                                message_filter: Union[Dict, MessageFilter] = None,
+                                metadata_filter: Union[Dict, MetadataFilter] = None,
                                 ignore_fields: List[str] = None,
                                 check_repeating_group_order: bool = None,
                                 time_precision: Duration = None,
-                                decimal_precision: str = None):
+                                decimal_precision: str = None) -> RootMessageFilter:
+    """Converts a dict to root message filter.
+
+    :rtype: RootMessageFilter
+    :return: root message filter
+    """
+
     if message_filter is None:
-        message_filter = {}
+        message_filter = MessageFilter()
+    if isinstance(message_filter, Dict):
+        message_filter = MessageFilter(fields={field: _convert_filter_value(message_filter[field], values=True)
+                                               for field in message_filter})
+
     if metadata_filter is None:
-        metadata_filter = {}
+        metadata_filter = MetadataFilter()
+    elif isinstance(metadata_filter, Dict):
+        metadata_filter = MetadataFilter(property_filters={
+            value: _convert_filter_value(metadata_filter[value], metadata=True)
+            for value in metadata_filter
+        })
+
     return RootMessageFilter(messageType=message_type,
-                             message_filter=MessageFilter(fields={
-                                 field: _convert_filter_value(message_filter[field], values=True)
-                                 for field in message_filter}),
-                             metadata_filter=MetadataFilter(property_filters={
-                                 value: _convert_filter_value(metadata_filter[value], metadata=True)
-                                 for value in metadata_filter}),
+                             message_filter=message_filter,
+                             metadata_filter=metadata_filter,
                              comparison_settings=RootComparisonSettings(
                                  ignore_fields=ignore_fields,
                                  check_repeating_group_order=check_repeating_group_order,
@@ -124,7 +156,16 @@ def _convert_value_into_typed_field(value, typed_value):
         return type(typed_value)(**fields_typed)
 
 
-def message_to_typed_message(message, message_type: Callable):
+def message_to_typed_message(message: Message, message_type: Callable):
+    """Converts th2-message to typed message.
+
+    :param message: th2-message
+    :param message_type: typed message class object (described in gRPC API)
+
+    :rtype: typed message class
+    :return: message as typed message class instance
+    """
+
     response_fields = [field.name for field in message_type().DESCRIPTOR.fields]
     fields_typed = {field: _convert_value_into_typed_field(message.fields[field], getattr(message_type(), field))
                     for field in response_fields}
@@ -139,22 +180,31 @@ def _message_to_table_convert_value(value):
     if isinstance(value, (str, int, float)):
         table_entity = Row()
         table_entity.add_column(TableColumnName.FIELD_VALUE, value)
-        return table_entity
-
     elif isinstance(value, list):
         table_entity = Collection()
         for index, item in enumerate(value):
             table_entity.add_row(index, _message_to_table_convert_value(item))
-        return table_entity.sort()
-
     elif isinstance(value, dict):
         table_entity = Collection()
         for item in value:
             table_entity.add_row(item, _message_to_table_convert_value(value[item]))
-        return table_entity.sort()
+    else:
+        raise TypeError('Expected object type of str, int, float, list or dict, got %s' % type(value))
+    return table_entity
 
 
-def message_to_table(message: Union[Message, Dict]):
+def message_to_table(message: Union[Message, Dict]) -> TreeTable:
+    """Converts th2-message or dict to a tree table.
+
+    Note:
+        Table can have only two columns. Nested tables are allowed.
+
+    :param message: th2-message
+
+    :rtype: TreeTable
+    :return: table with two columns
+    """
+
     if isinstance(message, Message):
         message = message_to_dict(message)
 
@@ -164,4 +214,4 @@ def message_to_table(message: Union[Message, Dict]):
         table_entity = _message_to_table_convert_value(message[field_name])
         table.add_row(field_name, table_entity)
 
-    return table.sort()
+    return table

@@ -1,4 +1,4 @@
-#   Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+#   Copyright 2022-2022 Exactpro (Exactpro Systems Limited)
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import enum
-from collections import OrderedDict
+from sortedcontainers import SortedDict
 from json import JSONEncoder
 from typing import Union
 
@@ -38,31 +38,23 @@ class Collection:
 
     def __init__(self) -> None:
         self.type = TableEntityType.COLLECTION
-        self.rows = {}
+        self.rows = SortedDict()
 
     def add_row(self, name: Union[str, int], row: Row):
         self.rows[name] = row
-
-    def sort(self):
-        self.rows = OrderedDict(sorted(self.rows.items()))
-        return self
 
 
 class TreeTable:
 
     def __init__(self) -> None:
         self.type = TableEntityType.TREE_TABLE
-        self.rows = {}
+        self.rows = SortedDict()
 
     def __bytes__(self):
         return TreeTableEncoder.create_bytes(self)
 
     def add_row(self, name: str, table_entity: Union[Row, Collection]):
         self.rows[name] = table_entity
-
-    def sort(self):
-        self.rows = OrderedDict(sorted(self.rows.items()))
-        return self
 
 
 class TreeTableEncoder:
