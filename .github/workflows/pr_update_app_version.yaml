@@ -1,0 +1,23 @@
+name: Update package version
+
+on: issue_comment
+
+jobs:
+  pr_commented:
+    # This job only runs for pull request comments
+    name: PR comment
+    if: github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+      - run: shopt -s nocasematch
+      - name: Update version
+        run: |
+          case $github.event.comment.body in
+          "update major") poetry version major;;
+          "update minor") poetry version minor;;
+          "update patch") poetry version patch;;
+          *) echo "Vesion update was not requested";;
+          esac
