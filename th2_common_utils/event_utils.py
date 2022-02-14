@@ -13,18 +13,15 @@
 #   limitations under the License.
 
 import uuid
-from json import JSONEncoder
 
 from google.protobuf.timestamp_pb2 import Timestamp
 from th2_grpc_common.common_pb2 import EventID, EventStatus, MessageID, Event
 
+from th2_common_utils.util.common import ComponentEncoder
+
 
 class EventUtils:
     """This class contains methods for th2-events creating."""
-
-    class __ComponentEncoder(JSONEncoder):
-        def default(self, o):
-            return o.__dict__
 
     @staticmethod
     def create_event_body(component) -> bytes:
@@ -33,8 +30,8 @@ class EventUtils:
         return EventUtils.component_encoder().encode(component).encode()
 
     @staticmethod
-    def component_encoder() -> __ComponentEncoder:
-        return EventUtils.__ComponentEncoder()
+    def component_encoder() -> ComponentEncoder:
+        return ComponentEncoder()
 
     @staticmethod
     def create_event_id() -> EventID:

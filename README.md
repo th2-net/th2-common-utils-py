@@ -21,7 +21,7 @@ import th2_common_utils
 msg['BO5Items'][0]['segment_instance_number']['segment_number']
 ```
 
-### 2. Convertors
+### 2. Converters
 * `message_to_dict(message)` - note, you will lose all metadata of the Message.
 * `dict_to_message(fields, session_alias, message_type)` - where:
     * *fields* - required argument - message fields as a python dict;

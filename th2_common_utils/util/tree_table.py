@@ -14,8 +14,9 @@
 
 import enum
 from sortedcontainers import SortedDict
-from json import JSONEncoder
 from typing import Union
+
+from th2_common_utils.util.common import ComponentEncoder
 
 
 class TableEntityType(str, enum.Enum):
@@ -58,10 +59,6 @@ class TreeTable:
 
 
 class TreeTableEncoder:
-    class __ComponentEncoder(JSONEncoder):
-        def default(self, o):
-            return o.__dict__
-
     @staticmethod
     def create_bytes(tree_table: TreeTable) -> bytes:
-        return TreeTableEncoder.__ComponentEncoder().encode(tree_table).encode()
+        return ComponentEncoder().encode(tree_table).encode()

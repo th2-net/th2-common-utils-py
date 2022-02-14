@@ -17,7 +17,7 @@ import enum
 from typing import List, Callable, Union, Dict
 
 from google.protobuf.duration_pb2 import Duration
-from th2_common_utils.tree_table import TreeTable, Collection, Row
+from th2_common_utils.util.tree_table import TreeTable, Collection, Row
 from th2_grpc_common.common_pb2 import Message, ListValue, Value, MessageMetadata, MessageID, ConnectionID, \
     RootMessageFilter, MessageFilter, MetadataFilter, RootComparisonSettings, ValueFilter, ListValueFilter, SimpleList
 
