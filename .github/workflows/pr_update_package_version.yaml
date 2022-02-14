@@ -3,21 +3,55 @@ name: Update package version
 on: issue_comment
 
 jobs:
-  pr_commented:
+  organization_member_check:
     # This job only runs for pull request comments
-    name: PR comment
-    if: github.event.issue.pull_request
+    name: Organisation member check
+    if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-latest
+    outputs:
+      is_member: ${{ steps.is_organization_member.outputs.result }}
     steps:
       - uses: actions/checkout@v2
+
+      - name: Check if organization member
+        id: is_organization_member
+        uses: jamessingleton/is-organization-member@v1
+        with:
+          organization: th2
+          username: ${{ github.event.issue.user.login }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  package_version_update:
+    name: Package version update
+    needs: organization_member_check
+    if: ${{ needs.organization_member_check.outputs.is_member == true }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Install Poetry
         uses: snok/install-poetry@v1
-      - run: shopt -s nocasematch
-      - name: Update version
+
+      - name: Get package version
+        id: pack_ver
         run: |
+          echo '::set-output name=package_version::$(poetry version -s)'
+          echo '::set-output name=is_updated::true'
+
+      - name: Update version
+        id: update_version
+        run: |
+          shopt -s nocasematch
+
           case $github.event.comment.body in
           "update major") poetry version major;;
           "update minor") poetry version minor;;
           "update patch") poetry version patch;;
-          *) echo "Vesion update was not requested";;
+          *) steps.pack_ver.outputs.is_updated=false;;
           esac
+
+      - name: Rebuild package
+        if: ${{ steps.update_version.outputs.is_updated }}
+        run: poetry build
+
+      - name: Create Comment
+        if: ${{ steps.update_version.outputs.is_updated }}
+        run: echo "Package version raised from $steps.pack_ver.outputs.package_version to $(poetry version -s) successfully."
