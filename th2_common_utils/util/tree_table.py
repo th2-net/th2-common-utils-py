@@ -16,7 +16,7 @@ import enum
 from sortedcontainers import SortedDict
 from typing import Union
 
-from th2_common_utils.util.common import ComponentEncoder
+from th2_common_utils import EventUtils
 
 
 class TableEntityType(str, enum.Enum):
@@ -53,14 +53,7 @@ class TreeTable:
         self.rows = SortedDict()
 
     def __bytes__(self):
-        return TreeTableEncoder.create_bytes(self)
+        return EventUtils.create_event_body(self)
 
     def add_row(self, name: str, table_entity: Union[Row, Collection]):
         self.rows[name] = table_entity
-
-
-class TreeTableEncoder:
-
-    @staticmethod
-    def create_bytes(tree_table: TreeTable) -> bytes:
-        return ComponentEncoder().encode(tree_table).encode()

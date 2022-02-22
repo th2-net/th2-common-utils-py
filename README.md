@@ -8,6 +8,7 @@ pip install th2-common-utils
 
 ## Usage
 ### 1. Message fields access 
+
 The library provides a convenient way for Message fields access.
 
 Instead of this:
@@ -22,6 +23,7 @@ msg['BO5Items'][0]['segment_instance_number']['segment_number']
 ```
 
 ### 2. Converters
+
 * `message_to_dict(message)` - note, you will lose all metadata of the Message.
 * `dict_to_message(fields, session_alias, message_type)` - where:
     * *fields* - required argument - message fields as a python dict;
@@ -33,3 +35,18 @@ time_precision, decimal_precision)` - all arguments are optional.
     * *message_type* - TypedMessage **class object**.
 * `message_to_table(message)` - where:
     * *message* - Message object or dict.
+
+To import functions above:
+```python
+from th2_common_utils import message_to_dict, dict_to_message # ...
+```
+
+### 3. Working with events
+
+`th2-common-utils` provides the class to work with events - `EventUtils`.
+
+Methods of `EventUtils` class:
+* `create_event_body(component)` - creates event body from `component` as bytes.
+* `create_event_id()` - creates EventID.
+* `create_event(id, parent_id, start_timestamp, end_timestamp, status, name, 
+type, body, attached_message_ids)` - creates event; all arguments are optional.

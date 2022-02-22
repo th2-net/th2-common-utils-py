@@ -25,7 +25,14 @@ class EventUtils:
 
     @staticmethod
     def create_event_body(component) -> bytes:
-        """Creates event body (component) as bytes."""
+        """Creates event body (component) as bytes.
+
+        Args:
+            component: Event body to be converted into bytes.
+
+        Returns:
+            Event body as bytes.
+        """
 
         return EventUtils.component_encoder().encode(component).encode()
 
