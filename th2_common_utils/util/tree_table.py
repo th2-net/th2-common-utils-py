@@ -16,7 +16,7 @@ import enum
 from sortedcontainers import SortedDict
 from typing import Union
 
-from th2_common_utils import EventUtils
+from th2_common_utils.event_utils import EventUtils
 
 
 class TableEntityType(str, enum.Enum):
