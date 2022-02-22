@@ -15,7 +15,7 @@
 
 from pprint import pformat
 
-from th2_common_utils.converters import message_to_dict, ValueType
+from th2_common_utils.converters import message_to_dict, _dict_to_message_convert_value, ValueType, TypeName
 from th2_grpc_common.common_pb2 import Value, ListValue, Message
 
 
@@ -56,6 +56,24 @@ ListValue.__len__ = listvalue_len
 # Message
 # =========================
 
+def message_setitem(self, key, value):
+    value_type = type(value).__name__
+
+    if value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
+        self.fields[key].simple_value = str(value)
+
+    elif value_type == TypeName.VALUE:
+        self.fields[key].simple_value = value.simple_value
+
+    elif value_type in {TypeName.LIST, TypeName.LIST_VALUE}:
+        th2_value = _dict_to_message_convert_value(value)
+        self.fields[key].list_value.CopyFrom(th2_value.list_value)
+
+    elif value_type in {TypeName.DICT, TypeName.MESSAGE}:
+        th2_value = _dict_to_message_convert_value(value)
+        self.fields[key].message_value.CopyFrom(th2_value.message_value)
+
+
 def message_getitem(self, item):
     value = self.fields[item]
     return value.__get__(item)
@@ -69,6 +87,7 @@ def message_repr(self):
     return pformat(message_to_dict(self))
 
 
+Message.__setitem__ = message_setitem
 Message.__getitem__ = message_getitem
 Message.__contains__ = message_contains
 Message.__repr__ = message_repr

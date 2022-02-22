@@ -20,6 +20,7 @@ from th2_common_utils.util.common import ComponentEncoder
 
 
 class TableEntityType(str, enum.Enum):
+
     ROW = 'row'
     COLLECTION = 'collection'
     TREE_TABLE = 'treeTable'
@@ -59,6 +60,7 @@ class TreeTable:
 
 
 class TreeTableEncoder:
+
     @staticmethod
     def create_bytes(tree_table: TreeTable) -> bytes:
         return ComponentEncoder().encode(tree_table).encode()

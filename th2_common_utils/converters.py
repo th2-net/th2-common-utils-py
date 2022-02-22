@@ -19,15 +19,32 @@ from typing import List, Callable, Union, Dict
 from google.protobuf.duration_pb2 import Duration
 from th2_common_utils.util.tree_table import TreeTable, Collection, Row
 from th2_grpc_common.common_pb2 import Message, ListValue, Value, MessageMetadata, MessageID, ConnectionID, \
-    RootMessageFilter, MessageFilter, MetadataFilter, RootComparisonSettings, ValueFilter, ListValueFilter, SimpleList
+    RootMessageFilter, MessageFilter, MetadataFilter, RootComparisonSettings, ValueFilter, ListValueFilter, \
+    SimpleList, EventID
 
 
 class ValueType(str, enum.Enum):
+
     WHICH_ONE_OF = 'kind'
 
     SIMPLE = 'simple_value'
     LIST = 'list_value'
     MESSAGE = 'message_value'
+
+
+class TypeName(str, enum.Enum):
+
+    STR = 'str'
+    INT = 'int'
+    FLOAT = 'float'
+    LIST = 'list'
+    DICT = 'dict'
+
+    VALUE = 'Value'
+    LIST_VALUE = 'ListValue'
+    MESSAGE = 'Message'
+
+    VALUE_FILTER = 'ValueFilter'
 
 
 def _message_to_dict_convert_value(value):
@@ -44,58 +61,96 @@ def _message_to_dict_convert_value(value):
 def message_to_dict(message: Message) -> Dict:
     """Converts th2-message to a dict.
 
-    Note:
-        You will lose all metadata of the Message.
+    Fields of th2-message will be converted to a dict. You will lose all metadata.
 
-    :param message: th2-message
+    Args:
+        message: th2-message.
 
-    :rtype: dict
-    :return: message fields as a dict
+    Returns:
+        th2-message fields (message.fields) as a dict. All nested entities will be also converted.
+
+        Conversion rules:
+            Value.simple_value - str
+            Value.list_value - list
+            Value.message_value - dict
+
+    Raises:
+        TypeError: Occurs when 'message.fields' contains a field not of the 'Value' type.
     """
 
     return {field: _message_to_dict_convert_value(message.fields[field]) for field in message.fields}
 
 
 def _dict_to_message_convert_value(value):
-    if isinstance(value, Value):
-        return value
-    elif isinstance(value, (str, int, float)):
+    value_type = type(value).__name__
+
+    if value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
         return Value(simple_value=str(value))
-    elif isinstance(value, list):
+    elif value_type == TypeName.LIST:
         return Value(list_value=ListValue(values=[_dict_to_message_convert_value(x) for x in value]))
-    elif isinstance(value, dict):
+    elif value_type == TypeName.DICT:
         return Value(message_value=Message(fields={key: _dict_to_message_convert_value(value[key]) for key in value}))
 
+    elif value_type == TypeName.VALUE:
+        return value
+    elif value_type == TypeName.LIST_VALUE:
+        return Value(list_value=value)
+    elif value_type == TypeName.MESSAGE:
+        return Value(message_value=value)
 
-def dict_to_message(fields: dict, session_alias: str = None, message_type: str = None) -> Message:
-    """Converts a dict to th2-message with metadata.
+    else:
+        raise TypeError('Cannot convert %s object.' % value_type)
 
-    :param fields: message fields
-    :param session_alias: message session alias
-    :param message_type: message type
 
-    :rtype: Message
-    :return: th2-message with metadata
+def dict_to_message(fields: dict, parent_event_id: EventID = None, session_alias: str = None,
+                    message_type: str = None) -> Message:
+    """Converts a dict to th2-message with 'metadata' and 'parent_event_id'.
+
+    Args:
+        fields: Message fields as a dict.
+        parent_event_id: Parent event id.
+        session_alias: Session alias (is used when creating message metadata).
+        message_type: Message type (is used when creating message metadata).
+
+    Returns:
+        th2-message with 'metadata' and 'parent_event_id'. All 'fields' nested entities will be converted.
+
+        Conversion rules:
+            str, int, float, Value - Value.simple_value
+            list, ListValue - Value.list_value
+            dict, Message - Value.message_value.
+
+    Raises:
+        TypeError: Occurs when 'message.fields' contains a field of the unsupported type.
     """
 
-    return Message(metadata=MessageMetadata(id=MessageID(connection_id=ConnectionID(session_alias=session_alias)),
+    if parent_event_id is None:
+        parent_event_id = EventID()
+
+    return Message(parent_event_id=parent_event_id,
+                   metadata=MessageMetadata(id=MessageID(connection_id=ConnectionID(session_alias=session_alias)),
                                             message_type=message_type),
                    fields={field: _dict_to_message_convert_value(fields[field]) for field in fields})
 
 
 def _convert_filter_value(value, message_type=None, direction=None, values=False, metadata=False):
-    if isinstance(value, ValueFilter):
+    value_type = type(value).__name__
+
+    if value_type == TypeName.VALUE_FILTER:
         return value
-    elif isinstance(value, (str, int, float)) and values is True:
+
+    elif value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT} and values is True:
         return ValueFilter(simple_filter=str(value))
-    elif isinstance(value, (str, int, float)) and metadata is True:
+    elif value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT} and metadata is True:
         return MetadataFilter.SimpleFilter(value=str(value))
-    elif isinstance(value, list) and values is True:
+
+    elif value_type == TypeName.LIST and values is True:
         return ValueFilter(list_filter=ListValueFilter(
             values=[_convert_filter_value(x, values=values, metadata=metadata) for x in value]))
-    elif isinstance(value, list) and metadata is True:
+    elif value_type == TypeName.LIST and metadata is True:
         return MetadataFilter.SimpleFilter(simple_list=SimpleList(simple_values=value))
-    elif isinstance(value, dict):
+
+    elif value_type == TypeName.DICT:
         return ValueFilter(
             message_filter=MessageFilter(messageType=message_type,
                                          fields={key: _convert_filter_value(value[key],
@@ -103,6 +158,8 @@ def _convert_filter_value(value, message_type=None, direction=None, values=False
                                                                             metadata=metadata)
                                                  for key in value},
                                          direction=direction))
+    else:
+        raise TypeError('Cannot convert %s object.' % type(value))
 
 
 def dict_to_root_message_filter(message_type: str = None,
@@ -114,8 +171,21 @@ def dict_to_root_message_filter(message_type: str = None,
                                 decimal_precision: str = None) -> RootMessageFilter:
     """Converts a dict to root message filter.
 
-    :rtype: RootMessageFilter
-    :return: root message filter
+    Args:
+        message_type: Message type.
+        message_filter: Message filter as a dict or MessageFilter class instance.
+        metadata_filter: Metadata filter as a dict or MetadataFilter class instance.
+        ignore_fields: Fields to ignore (is used when creating filter's comparison settings).
+        check_repeating_group_order: Whether check repeating group order or not (is used when creating filter's
+            comparison settings).
+        time_precision: Time precision (is used when creating filter's comparison settings).
+        decimal_precision: Decimal Precision (is used when creating filter's comparison settings).
+
+    Returns:
+        Root message filter class instance.
+
+    Raises:
+        TypeError: Occurs when MessageFilter or MetadataFilter as dicts contain a field of the unsupported type.
     """
 
     if message_filter is None:
@@ -144,6 +214,7 @@ def dict_to_root_message_filter(message_type: str = None,
 
 def _convert_value_into_typed_field(value, typed_value):
     field_value_kind = value.WhichOneof(ValueType.WHICH_ONE_OF)
+
     if field_value_kind == ValueType.SIMPLE:
         return type(typed_value)(value.simple_value)
     elif field_value_kind == ValueType.LIST:
@@ -159,11 +230,15 @@ def _convert_value_into_typed_field(value, typed_value):
 def message_to_typed_message(message: Message, message_type: Callable):
     """Converts th2-message to typed message.
 
-    :param message: th2-message
-    :param message_type: typed message class object (described in gRPC API)
+    Args:
+        message: th2-message.
+        message_type: Typed message class object (described in gRPC API).
 
-    :rtype: typed message class
-    :return: message as typed message class instance
+    Returns:
+        Message as typed message class instance.
+
+    Raises:
+        TypeError: Occurs when 'message.fields' contains a field not of the 'Value' type.
     """
 
     response_fields = [field.name for field in message_type().DESCRIPTOR.fields]
@@ -173,21 +248,24 @@ def message_to_typed_message(message: Message, message_type: Callable):
 
 
 class TableColumnName(str, enum.Enum):
+
     FIELD_VALUE = 'Field Value'
 
 
 def _message_to_table_convert_value(value):
-    if isinstance(value, (str, int, float)):
+    value_type = type(value).__name__
+
+    if value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
         table_entity = Row()
-        table_entity.add_column(TableColumnName.FIELD_VALUE, value)
-    elif isinstance(value, list):
+        table_entity.add_column(name=TableColumnName.FIELD_VALUE, value=value)
+    elif value_type == TypeName.LIST:
         table_entity = Collection()
         for index, item in enumerate(value):
-            table_entity.add_row(index, _message_to_table_convert_value(item))
-    elif isinstance(value, dict):
+            table_entity.add_row(name=index, row=_message_to_table_convert_value(item))
+    elif value_type == TypeName.DICT:
         table_entity = Collection()
         for item in value:
-            table_entity.add_row(item, _message_to_table_convert_value(value[item]))
+            table_entity.add_row(name=item, row=_message_to_table_convert_value(value[item]))
     else:
         raise TypeError('Expected object type of str, int, float, list or dict, got %s' % type(value))
     return table_entity
@@ -196,13 +274,17 @@ def _message_to_table_convert_value(value):
 def message_to_table(message: Union[Message, Dict]) -> TreeTable:
     """Converts th2-message or dict to a tree table.
 
-    Note:
-        Table can have only two columns. Nested tables are allowed.
+    Table can have only two columns. Nested tables are allowed. You will lose 'parent_event_id' and 'metadata'
+        of the message.
 
-    :param message: th2-message
+    Args:
+        message: th2-message.
 
-    :rtype: TreeTable
-    :return: table with two columns
+    Returns:
+        Tree table with two columns - one contains the name of the field and the other contains the value of this field.
+
+    Raises:
+        TypeError: Occurs when 'message.fields' contains a field not of the 'Value' type.
     """
 
     if isinstance(message, Message):

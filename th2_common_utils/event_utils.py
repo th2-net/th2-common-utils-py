@@ -35,7 +35,11 @@ class EventUtils:
 
     @staticmethod
     def create_event_id() -> EventID:
-        """Creates event id as EventID class instance."""
+        """Creates event id as EventID class instance.
+
+        Returns:
+            EventID class instance with 'id' attribute.
+        """
 
         return EventID(id=str(uuid.uuid1()))
 
@@ -55,7 +59,22 @@ class EventUtils:
                      type: str = None,
                      body: bytes = b'',
                      attached_message_ids: [MessageID] = None) -> Event:
-        """Creates event as Event class instance."""
+        """Creates event as Event class instance.
+
+        Args:
+            id: ID of the event.
+            parent_id: Parent ID of the event.
+            start_timestamp: Start timestamp.
+            end_timestamp: End timestamp.
+            status: Event status ('SUCCESS' or 'FAILED').
+            name: Event name.
+            type: Event type.
+            body: Event body as bytes. TreeTable class instance as bytes can be passed.
+            attached_message_ids: Attached message IDs.
+
+        Returns:
+            Event class instance with attributes.
+        """
 
         return Event(
             id=id or EventUtils.create_event_id(),
