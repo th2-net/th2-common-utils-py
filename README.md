@@ -50,3 +50,12 @@ Methods of `EventUtils` class:
 * `create_event_id()` - creates EventID.
 * `create_event(id, parent_id, start_timestamp, end_timestamp, status, name, 
 type, body, attached_message_ids)` - creates event; all arguments are optional.
+
+To use functions above:
+```python
+from th2_common_utils import EventUtils as eu
+
+my_event = eu.create_event(id=eu.create_event_id,
+                           name='My event',
+                           #... )
+```
