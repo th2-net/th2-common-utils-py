@@ -23,16 +23,11 @@ from th2_grpc_common.common_pb2 import Value, ListValue, Message
 # Value
 # =========================
 
-def _value_get(self, item):
-    try:
-        return getattr(self, self.WhichOneof(ValueType.WHICH_ONE_OF))
-    except TypeError:
-        # If you request protobuf class Value without the item inside, you will get TypeError.
-        # Occurs when requesting a non-existent key in the dict.
-        raise KeyError(item)
+def value_get(self, item):
+    return getattr(self, self.WhichOneof(ValueType.KIND))
 
 
-Value.__get__ = _value_get
+Value.__get__ = value_get
 
 
 # =========================
@@ -73,10 +68,16 @@ def message_setitem(self, key, value):
         th2_value = _dict_to_message_convert_value(value)
         self.fields[key].message_value.CopyFrom(th2_value.message_value)
 
+    else:
+        raise TypeError('Cannot set %s object as field value.' % value_type)
+
 
 def message_getitem(self, item):
-    value = self.fields[item]
-    return value.__get__(item)
+    if item in self.fields:
+        value = self.fields[item]
+        return value.__get__(item)
+    else:
+        raise KeyError(item)
 
 
 def message_contains(self, item):

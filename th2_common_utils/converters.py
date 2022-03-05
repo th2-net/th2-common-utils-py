@@ -25,7 +25,7 @@ from th2_grpc_common.common_pb2 import Message, ListValue, Value, MessageMetadat
 
 class ValueType(str, enum.Enum):
 
-    WHICH_ONE_OF = 'kind'
+    KIND = 'kind'
 
     SIMPLE = 'simple_value'
     LIST = 'list_value'
@@ -48,7 +48,7 @@ class TypeName(str, enum.Enum):
 
 
 def _message_to_dict_convert_value(value):
-    value_kind = value.WhichOneof(ValueType.WHICH_ONE_OF)
+    value_kind = value.WhichOneof(ValueType.KIND)
     if value_kind == ValueType.SIMPLE:
         return value.simple_value
     elif value_kind == ValueType.LIST:
@@ -213,7 +213,7 @@ def dict_to_root_message_filter(message_type: str = None,
 
 
 def _convert_value_into_typed_field(value, typed_value):
-    field_value_kind = value.WhichOneof(ValueType.WHICH_ONE_OF)
+    field_value_kind = value.WhichOneof(ValueType.KIND)
 
     if field_value_kind == ValueType.SIMPLE:
         return type(typed_value)(value.simple_value)
