@@ -1,0 +1,205 @@
+name: Update package version
+
+on:
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  is_update_requested:
+    name: Is version update requested
+    if: |
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '$ update ')
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.is_requested.outputs.result }}
+      version: ${{ steps.is_requested.outputs.version }}
+    steps:
+      - name: Version update requested
+        id: is_requested
+        run: |
+          shopt -s extglob
+          shopt -s nocasematch
+
+          case "${{ github.event.comment.body }}" in
+            "$ update major" ) result=true version=major;;
+            "$ update minor" ) result=true version=minor;;
+            "$ update patch" ) result=true version=patch;;
+            \$[[:space:]]update[[:space:]]+([0-9])\.+([0-9])\.+([0-9]) )
+              result=true
+              version=$(echo "${{ github.event.comment.body }}" | sed 's/\$[[:space:]]update[[:space:]]//gI');;
+            * ) result=false version=none;;
+          esac
+
+          echo "::set-output name=result::$result"
+          echo "::set-output name=version::$version"
+
+      - name: Output
+        run: |
+          echo Was update requested: ${{ steps.is_requested.outputs.result }}
+          echo Version to update: ${{ steps.is_requested.outputs.version }}
+
+  is_organization_member:
+    name: Is th2 member
+    needs: is_update_requested
+    runs-on: ubuntu-latest
+    outputs:
+      is_member: ${{ steps.membership_check.outputs.result }}
+    steps:
+      - name: Membership check
+        id: membership_check
+        uses: jamessingleton/is-organization-member@main
+        with:
+          organization: th2-net
+          username: ${{ github.event.issue.user.login }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create -not member- comment body
+        id: comment_body
+        if: steps.membership_check.outputs.result == 'false'
+        run: |
+          user=${{ github.event.comment.user.login }}
+          body="Either ${user} is not part of the th2-net organization or ${user} has its Organization
+            Visibility set to Private at https://github.com/orgs/th2-net/people?query=${user}.
+            Ensure you change Organization Visibility to Public and trigger the test again."
+
+          echo "::set-output name=body::$(echo $body)"
+
+      - name: -Not member- comment
+        if: steps.comment_body.outcome == 'success'
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '${{ steps.comment_body.outputs.body }}'
+            })
+
+      - name: Output
+        run: |
+          user=${{ github.event.comment.user.login }}
+          result=${{ steps.membership_check.outputs.result }}
+          echo Is $user th2 member: $result
+
+  update_package_version:
+    name: Update package version
+    needs: [is_update_requested, is_organization_member]
+    if: |
+      needs.is_organization_member.outputs.is_member == 'true' &&
+      needs.is_update_requested.outputs.result == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - uses: eficode/resolve-pr-refs@main
+        id: refs
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Git configuration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git pull
+
+      - name: Checkout on target branch
+        id: target
+        run: |
+          git checkout ${{ steps.refs.outputs.base_ref }}
+          echo "::set-output name=package_version::$(poetry version -s)"
+
+      - name: Checkout on source branch
+        id: old_source
+        run: |
+          git checkout ${{ steps.refs.outputs.head_ref }}
+          echo "::set-output name=package_version::$(poetry version -s)"
+
+      - name: Update version
+        id: new_source
+        run: |
+          shopt -s extglob
+          shopt -s nocasematch
+
+          case '${{ needs.is_update_requested.outputs.version }}' in
+            "major" ) poetry version major;;
+            "minor" ) poetry version minor;;
+            "patch" ) poetry version patch;;
+            +([0-9])\.+([0-9])\.+([0-9]) ) poetry version ${{ needs.is_update_requested.outputs.version }};;
+          esac
+
+          echo "::set-output name=package_version::$(poetry version -s)"
+
+      - name: Check versions in target and source branches
+        id: check_versions
+        env:
+          new_source_version: ${{ steps.new_source.outputs.package_version }}
+          old_source_version: ${{ steps.old_source.outputs.package_version }}
+          target_version: ${{ steps.target.outputs.package_version }}
+        run: |
+          if [[ ${{ env.new_source_version }} > ${{ env.target_version }} &&
+                ${{ env.new_source_version }} != ${{ env.old_source_version }} ]]; then
+            result=true
+            message="Package version was updated from ${{ env.old_source_version }} to ${{ env.new_source_version }}
+                successfully."
+
+          elif [[ ( ${{ env.new_source_version }} < ${{ env.target_version }} ||
+                  ${{ env.new_source_version }} == ${{ env.target_version }} ) &&
+                  ${{ env.new_source_version }} != ${{ env.old_source_version }} ]]; then
+            result=true
+            message="Package version was updated from ${{ env.old_source_version }}
+              to ${{ env.new_source_version }}, but package version in target branch is ${{ env.target_version }}."
+
+          elif [[ ${{ env.new_source_version }} == ${{ env.old_source_version }} ]]; then
+            result=false
+            message="Package version is already ${{ env.new_source_version }}. Nothing to be committed."
+
+          else
+            result=false
+            message="Cannot update package version."
+
+          fi
+
+          echo "::set-output name=result::$result"
+          echo "::set-output name=message::$(echo $message)"
+
+      - name: Commit & Push changes
+        if: steps.check_versions.outputs.result == 'true'
+        run: |
+          git add pyproject.toml
+          git commit -m "[TH2-0] Auto commit. Update package version"
+          git push
+
+      - name: -Update version- comment
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '${{ steps.check_versions.outputs.message }}'
+            })
+
+      - name: Output
+        run: |
+          echo Source branch: ${{ steps.refs.outputs.head_ref }}
+          echo Source branch old version: ${{ steps.old_source.outputs.package_version }}
+          echo Source branch new version: ${{ steps.new_source.outputs.package_version }}
+
+          echo Target branch: ${{ steps.refs.outputs.base_ref }}
+          echo Target branch version: ${{ steps.target.outputs.package_version }}
+
+          if ${{ steps.check_versions.outputs.result }}; then
+            echo Version update can be committed and pushed.
+          else
+            echo Cannot make commit and push.
+          fi
+
+          echo Message: ${{ steps.check_versions.outputs.message }}

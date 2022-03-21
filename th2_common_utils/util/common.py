@@ -12,8 +12,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from json import JSONEncoder
 
-from .message_fields_access import *
-from .converters import message_to_dict, dict_to_message, dict_to_root_message_filter, message_to_typed_message, \
-    message_to_table
-from .event_utils import EventUtils
+
+class ComponentEncoder(JSONEncoder):
+
+    def default(self, o):
+        return o.__dict__
