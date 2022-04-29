@@ -24,12 +24,14 @@ from th2_grpc_common.common_pb2 import ConnectionID, EventID, ListValue, ListVal
 
 
 class ValueType(str, enum.Enum):
+
     SIMPLE: str = 'simple_value'
     LIST: str = 'list_value'
     MESSAGE: str = 'message_value'
 
 
 class TypeName(str, enum.Enum):
+
     STR = 'str'
     INT = 'int'
     FLOAT = 'float'
@@ -50,7 +52,7 @@ def _message_to_dict_convert_value(value: Value) -> Optional[DictMessageType]:
     value_kind = value.WhichOneof('kind')
 
     if value_kind == ValueType.SIMPLE:
-        return value.simple_value
+        return value.simple_value  # type: ignore
     elif value_kind == ValueType.LIST:
         return [_message_to_dict_convert_value(list_item) for list_item in value.list_value.values]
     elif value_kind == ValueType.MESSAGE:
