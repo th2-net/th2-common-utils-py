@@ -12,19 +12,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from typing import Any, List, Optional
 import uuid
 
 from google.protobuf.timestamp_pb2 import Timestamp
-from th2_grpc_common.common_pb2 import EventID, EventStatus, MessageID, Event
-
 from th2_common_utils.util.common import ComponentEncoder
+from th2_grpc_common.common_pb2 import Event, EventID, EventStatus, MessageID
 
 
 class EventUtils:
     """This class contains methods for th2-events creating."""
 
     @staticmethod
-    def create_event_body(component) -> bytes:
+    def create_event_body(component: Any) -> bytes:
         """Creates event body (component) as bytes.
 
         Args:
@@ -51,31 +51,31 @@ class EventUtils:
         return EventID(id=str(uuid.uuid1()))
 
     @staticmethod
-    def create_timestamp():
+    def create_timestamp() -> Timestamp:
         timestamp = Timestamp()
         timestamp.GetCurrentTime()
         return timestamp
 
     @staticmethod
-    def create_event(id: EventID = None,
-                     parent_id: EventID = None,
-                     start_timestamp: Timestamp = None,
-                     end_timestamp: Timestamp = None,
-                     status: EventStatus = 'SUCCESS',
+    def create_event(event_id: Optional[EventID] = None,
+                     parent_id: Optional[EventID] = None,
+                     start_timestamp: Optional[Timestamp] = None,
+                     end_timestamp: Optional[Timestamp] = None,
+                     status: int = EventStatus.SUCCESS,
                      name: str = 'Event',
-                     type: str = None,
+                     event_type: str = '',
                      body: bytes = b'',
-                     attached_message_ids: [MessageID] = None) -> Event:
+                     attached_message_ids: Optional[List[MessageID]] = None) -> Event:
         """Creates event as Event class instance.
 
         Args:
-            id: ID of the event.
+            event_id: ID of the event.
             parent_id: Parent ID of the event.
             start_timestamp: Start timestamp.
             end_timestamp: End timestamp.
             status: Event status ('SUCCESS' or 'FAILED').
             name: Event name.
-            type: Event type.
+            event_type: Event type.
             body: Event body as bytes. TreeTable class instance as bytes can be passed.
             attached_message_ids: Attached message IDs.
 
@@ -84,12 +84,12 @@ class EventUtils:
         """
 
         return Event(
-            id=id or EventUtils.create_event_id(),
+            id=event_id or EventUtils.create_event_id(),
             parent_id=parent_id,
             start_timestamp=start_timestamp or EventUtils.create_timestamp(),
             end_timestamp=end_timestamp or EventUtils.create_timestamp(),
-            status=status,
+            status=status,  # type: ignore
             name=name,
-            type=type,
+            type=event_type,
             body=body,
             attached_message_ids=attached_message_ids)

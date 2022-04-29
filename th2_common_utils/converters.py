@@ -14,26 +14,22 @@
 
 
 import enum
-from typing import List, Callable, Union, Dict
+from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.duration_pb2 import Duration
-from th2_common_utils.util.tree_table import TreeTable, Collection, Row
-from th2_grpc_common.common_pb2 import Message, ListValue, Value, MessageMetadata, MessageID, ConnectionID, \
-    RootMessageFilter, MessageFilter, MetadataFilter, RootComparisonSettings, ValueFilter, ListValueFilter, \
-    SimpleList, EventID
+from th2_common_utils.util.tree_table import Collection, Row, TreeTable
+from th2_grpc_common.common_pb2 import ConnectionID, EventID, ListValue, ListValueFilter, Message, \
+    MessageFilter, MessageID, MessageMetadata, MetadataFilter, RootComparisonSettings, RootMessageFilter, \
+    SimpleList, Value, ValueFilter
 
 
 class ValueType(str, enum.Enum):
-
-    KIND = 'kind'
-
-    SIMPLE = 'simple_value'
-    LIST = 'list_value'
-    MESSAGE = 'message_value'
+    SIMPLE: str = 'simple_value'
+    LIST: str = 'list_value'
+    MESSAGE: str = 'message_value'
 
 
 class TypeName(str, enum.Enum):
-
     STR = 'str'
     INT = 'int'
     FLOAT = 'float'
@@ -47,18 +43,26 @@ class TypeName(str, enum.Enum):
     VALUE_FILTER = 'ValueFilter'
 
 
-def _message_to_dict_convert_value(value):
-    value_kind = value.WhichOneof(ValueType.KIND)
+DictMessageType = Union[str, List, Dict]
+
+
+def _message_to_dict_convert_value(value: Value) -> Optional[DictMessageType]:
+    value_kind = value.WhichOneof('kind')
+
     if value_kind == ValueType.SIMPLE:
         return value.simple_value
     elif value_kind == ValueType.LIST:
         return [_message_to_dict_convert_value(list_item) for list_item in value.list_value.values]
     elif value_kind == ValueType.MESSAGE:
-        return {field: _message_to_dict_convert_value(value.message_value.fields[field])
-                for field in value.message_value.fields}
+        return {
+            field: _message_to_dict_convert_value(value.message_value.fields[field])
+            for field in value.message_value.fields
+        }
+
+    return None
 
 
-def message_to_dict(message: Message) -> Dict:
+def message_to_dict(message: Message) -> Dict[str, Optional[DictMessageType]]:
     """Converts th2-message to a dict.
 
     Fields of th2-message will be converted to a dict. You will lose all metadata.
@@ -81,7 +85,7 @@ def message_to_dict(message: Message) -> Dict:
     return {field: _message_to_dict_convert_value(message.fields[field]) for field in message.fields}
 
 
-def _dict_to_message_convert_value(value):
+def _dict_to_message_convert_value(value: Any) -> Value:
     value_type = type(value).__name__
 
     if value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
@@ -92,7 +96,7 @@ def _dict_to_message_convert_value(value):
         return Value(message_value=Message(fields={key: _dict_to_message_convert_value(value[key]) for key in value}))
 
     elif value_type == TypeName.VALUE:
-        return value
+        return value  # type: ignore
     elif value_type == TypeName.LIST_VALUE:
         return Value(list_value=value)
     elif value_type == TypeName.MESSAGE:
@@ -102,8 +106,10 @@ def _dict_to_message_convert_value(value):
         raise TypeError('Cannot convert %s object.' % value_type)
 
 
-def dict_to_message(fields: dict, parent_event_id: EventID = None, session_alias: str = None,
-                    message_type: str = None) -> Message:
+def dict_to_message(fields: dict,
+                    parent_event_id: Optional[EventID] = None,
+                    session_alias: str = '',
+                    message_type: str = '') -> Message:
     """Converts a dict to th2-message with 'metadata' and 'parent_event_id'.
 
     Args:
@@ -133,42 +139,67 @@ def dict_to_message(fields: dict, parent_event_id: EventID = None, session_alias
                    fields={field: _dict_to_message_convert_value(fields[field]) for field in fields})
 
 
-def _convert_filter_value(value, message_type=None, direction=None, values=False, metadata=False):
+def _convert_metadata_filter_value(value: Any,
+                                   message_type: str = '',
+                                   direction: str = '') -> Union[ValueFilter, MetadataFilter.SimpleFilter]:
     value_type = type(value).__name__
 
     if value_type == TypeName.VALUE_FILTER:
-        return value
+        return value  # type: ignore
 
-    elif value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT} and values is True:
-        return ValueFilter(simple_filter=str(value))
-    elif value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT} and metadata is True:
+    elif value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
         return MetadataFilter.SimpleFilter(value=str(value))
 
-    elif value_type == TypeName.LIST and values is True:
-        return ValueFilter(list_filter=ListValueFilter(
-            values=[_convert_filter_value(x, values=values, metadata=metadata) for x in value]))
-    elif value_type == TypeName.LIST and metadata is True:
+    elif value_type == TypeName.LIST:
         return MetadataFilter.SimpleFilter(simple_list=SimpleList(simple_values=value))
 
     elif value_type == TypeName.DICT:
         return ValueFilter(
             message_filter=MessageFilter(messageType=message_type,
-                                         fields={key: _convert_filter_value(value[key],
-                                                                            values=values,
-                                                                            metadata=metadata)
-                                                 for key in value},
+                                         fields={
+                                             key: _convert_metadata_filter_value(value[key])  # type: ignore
+                                             for key in value
+                                         },
                                          direction=direction))
     else:
         raise TypeError('Cannot convert %s object.' % type(value))
 
 
-def dict_to_root_message_filter(message_type: str = None,
-                                message_filter: Union[Dict, MessageFilter] = None,
-                                metadata_filter: Union[Dict, MetadataFilter] = None,
-                                ignore_fields: List[str] = None,
-                                check_repeating_group_order: bool = None,
-                                time_precision: Duration = None,
-                                decimal_precision: str = None) -> RootMessageFilter:
+def _convert_message_filter_value(value: Any,
+                                  message_type: str = '',
+                                  direction: str = '') -> ValueFilter:
+    value_type = type(value).__name__
+
+    if value_type == TypeName.VALUE_FILTER:
+        return value  # type: ignore
+
+    elif value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
+        return ValueFilter(simple_filter=str(value))
+
+    elif value_type == TypeName.LIST:
+        return ValueFilter(list_filter=ListValueFilter(
+            values=[_convert_message_filter_value(x) for x in value])
+        )
+
+    elif value_type == TypeName.DICT:
+        return ValueFilter(
+            message_filter=MessageFilter(messageType=message_type,
+                                         fields={
+                                             key: _convert_message_filter_value(value[key])
+                                             for key in value
+                                         },
+                                         direction=direction))
+    else:
+        raise TypeError('Cannot convert %s object.' % type(value))
+
+
+def dict_to_root_message_filter(message_type: str = '',
+                                message_filter: Optional[Union[Dict, MessageFilter]] = None,
+                                metadata_filter: Optional[Union[Dict, MetadataFilter]] = None,
+                                ignore_fields: Optional[List[str]] = None,
+                                check_repeating_group_order: bool = False,
+                                time_precision: Optional[Duration] = None,
+                                decimal_precision: str = '') -> RootMessageFilter:
     """Converts a dict to root message filter.
 
     Args:
@@ -190,15 +221,17 @@ def dict_to_root_message_filter(message_type: str = None,
 
     if message_filter is None:
         message_filter = MessageFilter()
-    if isinstance(message_filter, Dict):
-        message_filter = MessageFilter(fields={field: _convert_filter_value(message_filter[field], values=True)
-                                               for field in message_filter})
+    elif isinstance(message_filter, Dict):
+        message_filter = MessageFilter(fields={
+            field: _convert_message_filter_value(message_filter[field])
+            for field in message_filter
+        })
 
     if metadata_filter is None:
         metadata_filter = MetadataFilter()
     elif isinstance(metadata_filter, Dict):
         metadata_filter = MetadataFilter(property_filters={
-            value: _convert_filter_value(metadata_filter[value], metadata=True)
+            value: _convert_metadata_filter_value(metadata_filter[value])  # type: ignore
             for value in metadata_filter
         })
 
@@ -212,48 +245,14 @@ def dict_to_root_message_filter(message_type: str = None,
                                  decimal_precision=decimal_precision))
 
 
-def _convert_value_into_typed_field(value, typed_value):
-    field_value_kind = value.WhichOneof(ValueType.KIND)
-
-    if field_value_kind == ValueType.SIMPLE:
-        return type(typed_value)(value.simple_value)
-    elif field_value_kind == ValueType.LIST:
-        return [_convert_value_into_typed_field(list_item, typed_value.add()) for list_item in value.list_value.values]
-    elif field_value_kind == ValueType.MESSAGE:
-        fields_typed = {
-            field: _convert_value_into_typed_field(value.message_value.fields[field], getattr(typed_value, field))
-            for field in value.message_value.fields
-        }
-        return type(typed_value)(**fields_typed)
-
-
-def message_to_typed_message(message: Message, message_type: Callable):
-    """Converts th2-message to typed message.
-
-    Args:
-        message: th2-message.
-        message_type: Typed message class object (described in gRPC API).
-
-    Returns:
-        Message as typed message class instance.
-
-    Raises:
-        TypeError: Occurs when 'message.fields' contains a field not of the 'Value' type.
-    """
-
-    response_fields = [field.name for field in message_type().DESCRIPTOR.fields]
-    fields_typed = {field: _convert_value_into_typed_field(message.fields[field], getattr(message_type(), field))
-                    for field in response_fields}
-    return message_type(**fields_typed)
-
-
 class TableColumnName(str, enum.Enum):
-
     FIELD_VALUE = 'Field Value'
 
 
-def _message_to_table_convert_value(value):
+def _message_to_table_convert_value(value: Any) -> Union[Row, Collection]:
     value_type = type(value).__name__
+
+    table_entity: Union[Row, Collection]
 
     if value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
         table_entity = Row()
@@ -261,13 +260,14 @@ def _message_to_table_convert_value(value):
     elif value_type == TypeName.LIST:
         table_entity = Collection()
         for index, item in enumerate(value):
-            table_entity.add_row(name=index, row=_message_to_table_convert_value(item))
+            table_entity.add_row(name=index, row=_message_to_table_convert_value(item))  # type: ignore
     elif value_type == TypeName.DICT:
         table_entity = Collection()
         for item in value:
-            table_entity.add_row(name=item, row=_message_to_table_convert_value(value[item]))
+            table_entity.add_row(name=item, row=_message_to_table_convert_value(value[item]))  # type: ignore
     else:
         raise TypeError('Expected object type of str, int, float, list or dict, got %s' % type(value))
+
     return table_entity
 
 

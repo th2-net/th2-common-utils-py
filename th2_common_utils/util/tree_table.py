@@ -13,10 +13,11 @@
 #   limitations under the License.
 
 import enum
-from sortedcontainers import SortedDict
-from typing import Union
+from typing import Dict, Union
 
+from sortedcontainers import SortedDict
 from th2_common_utils.event_utils import EventUtils
+from th2_common_utils.util.common import SimpleType
 
 
 class TableEntityType(str, enum.Enum):
@@ -30,9 +31,9 @@ class Row:
 
     def __init__(self) -> None:
         self.type = TableEntityType.ROW
-        self.columns = {}
+        self.columns: Dict[str, SimpleType] = {}
 
-    def add_column(self, name: str, value: Union[str, int, float]):
+    def add_column(self, name: str, value: SimpleType) -> None:
         self.columns[name] = value
 
 
@@ -42,7 +43,7 @@ class Collection:
         self.type = TableEntityType.COLLECTION
         self.rows = SortedDict()
 
-    def add_row(self, name: Union[str, int], row: Row):
+    def add_row(self, name: SimpleType, row: Row) -> None:
         self.rows[name] = row
 
 
@@ -52,8 +53,8 @@ class TreeTable:
         self.type = TableEntityType.TREE_TABLE
         self.rows = SortedDict()
 
-    def __bytes__(self):
+    def __bytes__(self) -> bytes:
         return EventUtils.create_event_body(self)
 
-    def add_row(self, name: str, table_entity: Union[Row, Collection]):
+    def add_row(self, name: str, table_entity: Union[Row, Collection]) -> None:
         self.rows[name] = table_entity
