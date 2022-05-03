@@ -24,23 +24,30 @@ jobs:
         pip install mypy
         python3 -m pip install types-protobuf
         
-        pip install flake8
-        pip install flake8-bugbear
-        pip install flake8-builtins
-        pip install flake8-comprehensions
-        pip install flake8-eradicate
-        pip install flake8-fixme
-        pip install flake8-multiline-containers
-        pip install flake8-print
-        pip install flake8-return
-        pip install flake8-quotes
-        pip install flake8-simplify
-        pip install pep8-naming
-        pip install flake8-cognitive-complexity
-        pip install flake8-expression-complexity
-        pip install flake8-import-order
-        pip install flake8-annotations-complexity
-        pip install flake8-annotations-coverage
+        declare -a flake8_plugins=(
+          flake8
+          flake8-bugbear
+          flake8-builtins
+          flake8-comprehensions
+          flake8-eradicate
+          flake8-fixme
+          flake8-multiline-containers
+          flake8-print
+          flake8-return
+          flake8-quotes
+          flake8-simplify
+          pep8-naming
+          flake8-cognitive-complexity
+          flake8-expression-complexity
+          flake8-import-order
+          flake8-annotations-complexity
+          flake8-annotations-coverage
+        )
+        
+        for plugin in ${flake8_plugins[*]}
+          do
+            eval "pip install "$plugin
+          done
     - name: Run MyPy
       run: mypy .
     - name: Run flake8
