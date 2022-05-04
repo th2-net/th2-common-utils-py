@@ -52,7 +52,7 @@ def _message_to_dict_convert_value(value: Value) -> Optional[DictMessageType]:
     value_kind = value.WhichOneof('kind')
 
     if value_kind == ValueType.SIMPLE:
-        return value.simple_value  # type: ignore
+        return value.simple_value
     elif value_kind == ValueType.LIST:
         return [_message_to_dict_convert_value(list_item) for list_item in value.list_value.values]
     elif value_kind == ValueType.MESSAGE:
@@ -141,9 +141,7 @@ def dict_to_message(fields: dict,
                    fields={field: _dict_to_message_convert_value(fields[field]) for field in fields})
 
 
-def _convert_metadata_filter_value(value: Any,
-                                   message_type: str = '',
-                                   direction: str = '') -> Union[ValueFilter, MetadataFilter.SimpleFilter]:
+def _convert_metadata_filter_value(value: Any) -> Union[MetadataFilter.SimpleFilter]:
     value_type = type(value).__name__
 
     if value_type == TypeName.VALUE_FILTER:
@@ -155,14 +153,6 @@ def _convert_metadata_filter_value(value: Any,
     elif value_type == TypeName.LIST:
         return MetadataFilter.SimpleFilter(simple_list=SimpleList(simple_values=value))
 
-    elif value_type == TypeName.DICT:
-        return ValueFilter(
-            message_filter=MessageFilter(messageType=message_type,
-                                         fields={
-                                             key: _convert_metadata_filter_value(value[key])  # type: ignore
-                                             for key in value
-                                         },
-                                         direction=direction))
     else:
         raise TypeError('Cannot convert %s object.' % type(value))
 
@@ -233,7 +223,7 @@ def dict_to_root_message_filter(message_type: str = '',
         metadata_filter = MetadataFilter()
     elif isinstance(metadata_filter, Dict):
         metadata_filter = MetadataFilter(property_filters={
-            value: _convert_metadata_filter_value(metadata_filter[value])  # type: ignore
+            value: _convert_metadata_filter_value(metadata_filter[value])
             for value in metadata_filter
         })
 

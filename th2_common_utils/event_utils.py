@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 import uuid
 
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -61,7 +61,7 @@ class EventUtils:
                      parent_id: Optional[EventID] = None,
                      start_timestamp: Optional[Timestamp] = None,
                      end_timestamp: Optional[Timestamp] = None,
-                     status: int = EventStatus.SUCCESS,
+                     status: Union[str, int] = EventStatus.SUCCESS,
                      name: str = 'Event',
                      event_type: str = '',
                      body: bytes = b'',
