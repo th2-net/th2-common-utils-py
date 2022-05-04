@@ -16,7 +16,7 @@ import enum
 from typing import Dict, Union
 
 from sortedcontainers import SortedDict
-from th2_common_utils.event_utils import EventUtils
+from th2_common_utils.event_utils import create_event_body
 from th2_common_utils.util.common import SimpleType
 
 
@@ -54,7 +54,7 @@ class TreeTable:
         self.rows = SortedDict()
 
     def __bytes__(self) -> bytes:
-        return EventUtils.create_event_body(self)
+        return create_event_body(self)
 
     def add_row(self, name: str, table_entity: Union[Row, Collection]) -> None:
         self.rows[name] = table_entity

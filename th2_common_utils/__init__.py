@@ -14,5 +14,5 @@
 
 
 from .converters import dict_to_message, dict_to_root_message_filter, message_to_dict, message_to_table
-from .event_utils import EventUtils
+from .event_utils import create_event, create_event_body, create_event_id, create_timestamp
 from .message_fields_access import *
