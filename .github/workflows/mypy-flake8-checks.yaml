@@ -49,6 +49,7 @@ jobs:
             eval "pip install "$plugin
           done
     - name: Run MyPy
+      continue-on-error: true
       run: mypy .
     - name: Run flake8
       run: flake8 .

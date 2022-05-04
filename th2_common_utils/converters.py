@@ -52,7 +52,7 @@ def _message_to_dict_convert_value(value: Value) -> Optional[DictMessageType]:
     value_kind = value.WhichOneof('kind')
 
     if value_kind == ValueType.SIMPLE:
-        return value.simple_value
+        return value.simple_value  # type: ignore
     elif value_kind == ValueType.LIST:
         return [_message_to_dict_convert_value(list_item) for list_item in value.list_value.values]
     elif value_kind == ValueType.MESSAGE:
