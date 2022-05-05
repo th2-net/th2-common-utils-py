@@ -38,15 +38,15 @@ setattr(Value, '__get__', value_get)
 
 def listvalue_getitem(self: ListValue, index: int) -> Union[str, List, Dict]:
     value = self.values[index]
-    return getattr(value, '__get__')(index)  # type: ignore
+    return value.__get__(index)  # type: ignore
 
 
 def listvalue_len(self: ListValue) -> int:
     return len(self.values)
 
 
-setattr(ListValue, '__getitem__', value_get)
-setattr(ListValue, '__len__', value_get)
+setattr(ListValue, '__getitem__', listvalue_getitem)
+setattr(ListValue, '__len__', listvalue_len)
 
 
 # =========================
@@ -77,7 +77,7 @@ def message_setitem(self: Message, key: str, value: Any) -> None:
 def message_getitem(self: Message, item: str) -> Union[str, List, Dict]:
     if item in self.fields:
         value = self.fields[item]
-        return getattr(value, '__get__')(item)  # type: ignore
+        return value.__get__(item)  # type: ignore
     else:
         raise KeyError(item)
 
