@@ -19,6 +19,9 @@ python = "^3.7"
 th2-grpc-common = "3.*"
 sortedcollections = "2.*"
 
+[tool.poetry.dev-dependencies]
+pytest = "^3.4"
+
 [build-system]
 requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

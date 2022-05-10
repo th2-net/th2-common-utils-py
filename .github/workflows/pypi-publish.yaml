@@ -19,8 +19,8 @@ jobs:
           python-version: 3.7
       - name: Run tests
         run: |
-          pip install -U pytest
-          py.test
+          poetry install
+          poetry run pytest
       - name: Build package
         run: poetry build
       # - name: Publish distribution to Test PyPI

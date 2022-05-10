@@ -15,10 +15,9 @@
 from datetime import datetime
 import random
 
-from th2_common.schema.util.util import create_root_message_filter
 from th2_common_utils.util.tree_table import TreeTable, Table
 
-from th2_common_utils import message_to_dict, dict_to_message, message_to_table
+from th2_common_utils import message_to_dict, dict_to_message, message_to_table, dict_to_root_message_filter
 from th2_grpc_common.common_pb2 import Value, Message, ListValue, MessageMetadata, MessageID, ConnectionID, EventID, \
     RootMessageFilter, MessageFilter, ValueFilter, ListValueFilter, MetadataFilter, SimpleList, RootComparisonSettings
 
@@ -160,9 +159,9 @@ def test_dict_to_root_message_filter() -> None:
                             'md_filter3': '3',
                             'md_filter4': ['4.1', '4.2']}
 
-    assert create_root_message_filter(message_type='MessageType',
-                                      message_filter=message_filter_dict,
-                                      metadata_filter=metadata_filter_dict) == root_message_filter
+    assert dict_to_root_message_filter(message_type='MessageType',
+                                       message_filter=message_filter_dict,
+                                       metadata_filter=metadata_filter_dict) == root_message_filter
 
 
 def test_message_to_table() -> None:
