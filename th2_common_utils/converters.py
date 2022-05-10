@@ -17,7 +17,7 @@ import enum
 from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.duration_pb2 import Duration
-from th2_common_utils.util.tree_table import Collection, Row, TreeTable
+from th2_common_utils.util.tree_table import Table, TreeTable
 from th2_grpc_common.common_pb2 import ConnectionID, EventID, ListValue, ListValueFilter, Message, \
     MessageFilter, MessageID, MessageMetadata, MetadataFilter, RootComparisonSettings, RootMessageFilter, \
     SimpleList, Value, ValueFilter
@@ -237,37 +237,46 @@ def dict_to_root_message_filter(message_type: str = '',
                                  decimal_precision=decimal_precision))
 
 
-class TableColumnName(str, enum.Enum):
-    FIELD_VALUE = 'Field Value'
+def _message_to_table_convert_value(message_value: Union[str, List, Dict],
+                                    columns_names: List[str]) -> Optional[Union[str, Table]]:
+    value_type = type(message_value).__name__
 
+    if value_type == TypeName.STR:
+        return message_value  # type: ignore
 
-def _message_to_table_convert_value(value: Any) -> Union[Row, Collection]:
-    value_type = type(value).__name__
-
-    table_entity: Union[Row, Collection]
-
-    if value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
-        table_entity = Row()
-        table_entity.add_column(name=TableColumnName.FIELD_VALUE, value=value)
     elif value_type == TypeName.LIST:
-        table_entity = Collection()
-        for index, item in enumerate(value):
-            table_entity.add_row(name=index, row=_message_to_table_convert_value(item))  # type: ignore
+        table = Table(columns_names)
+
+        for index, list_item in enumerate(message_value):
+            table_inner_item = _message_to_table_convert_value(list_item, columns_names)
+            if isinstance(table_inner_item, Table):
+                table.add_table(index, table_inner_item)
+            else:
+                table.add_row(index, table_inner_item)
+
+        return table
+
     elif value_type == TypeName.DICT:
-        table_entity = Collection()
-        for item in value:
-            table_entity.add_row(name=item, row=_message_to_table_convert_value(value[item]))  # type: ignore
+        table = Table(columns_names)
+
+        for field_name, field_value in message_value.items():  # type: ignore
+            table_inner_item = _message_to_table_convert_value(field_value, columns_names)
+            if isinstance(table_inner_item, Table):
+                table.add_table(field_name, table_inner_item)
+            else:
+                table.add_row(field_name, table_inner_item)
+
+        return table
+
     else:
-        raise TypeError('Expected object type of str, int, float, list or dict, got %s' % type(value))
-
-    return table_entity
+        raise TypeError('Expected object type of str, int, float, list or dict, got %s' % type(message_value))
 
 
-def message_to_table(message: Union[Message, Dict]) -> TreeTable:
+def message_to_table(message: Union[Dict, Message]) -> TreeTable:
     """Converts th2-message or dict to a tree table.
 
     Table can have only two columns. Nested tables are allowed. You will lose 'parent_event_id' and 'metadata'
-        of the message.
+    of the message.
 
     Args:
         message: th2-message.
@@ -282,10 +291,13 @@ def message_to_table(message: Union[Message, Dict]) -> TreeTable:
     if isinstance(message, Message):
         message = message_to_dict(message)
 
-    table = TreeTable()
+    table = TreeTable(columns_names=['Field Value'])
 
     for field_name in message:
-        table_entity = _message_to_table_convert_value(message[field_name])
-        table.add_row(field_name, table_entity)
+        table_entity = _message_to_table_convert_value(message[field_name], table.columns_names)  # type: ignore
+        if isinstance(table_entity, Table):
+            table.add_table(field_name, table_entity)
+        else:
+            table.add_row(field_name, table_entity)
 
     return table

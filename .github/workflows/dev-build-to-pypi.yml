@@ -24,11 +24,16 @@ jobs:
         run: echo ${{ steps.release_ver.outputs.value }}
       - name: Set version for current build in pyproject.toml
         run: poetry version ${{ steps.release_ver.outputs.value }}
-      # Build and publish
+      # Test
       - name: Set up Python 3.7
         uses: actions/setup-python@v1
         with:
           python-version: 3.7
+      - name: Run tests
+        run: |
+          pip install -U pytest
+          py.test
+      # Build and publish
       - name: Build package
         run: poetry build
       # - name: Publish distribution to Test PyPI
