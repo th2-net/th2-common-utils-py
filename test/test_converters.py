@@ -15,29 +15,40 @@
 from datetime import datetime
 import random
 
-from th2_common_utils.util.tree_table import TreeTable, Table
-
-from th2_common_utils import message_to_dict, dict_to_message, message_to_table, dict_to_root_message_filter
-from th2_grpc_common.common_pb2 import Value, Message, ListValue, MessageMetadata, MessageID, ConnectionID, EventID, \
-    RootMessageFilter, MessageFilter, ValueFilter, ListValueFilter, MetadataFilter, SimpleList, RootComparisonSettings
+from th2_common_utils import dict_to_message, dict_to_root_message_filter, message_to_dict, message_to_table
+from th2_common_utils.util.tree_table import Table, TreeTable
+from th2_grpc_common.common_pb2 import ConnectionID, EventID, ListValue, ListValueFilter, Message, MessageFilter, \
+    MessageID, MessageMetadata, MetadataFilter, RootComparisonSettings, RootMessageFilter, \
+    SimpleList, Value, ValueFilter
 
 cl_ord_id = random.randint(10 ** 6, (10 ** 7) - 1)
 transact_time = datetime.now().isoformat()
 parent_event_id = EventID()
 
-trading_party_message = Value(message_value=Message(fields={'NoPartyIDs': Value(list_value=ListValue(values=[
-    Value(message_value=Message(fields={'PartyID': Value(simple_value='DEMO-CONN1'),
-                                        'PartyIDSource': Value(simple_value='D'),
-                                        'PartyRole': Value(simple_value='76')})),
-    Value(message_value=Message(fields={'PartyID': Value(simple_value='0'),
-                                        'PartyIDSource': Value(simple_value='P'),
-                                        'PartyRole': Value(simple_value='3')})),
-    Value(message_value=Message(fields={'PartyID': Value(simple_value='0'),
-                                        'PartyIDSource': Value(simple_value='P'),
-                                        'PartyRole': Value(simple_value='122')})),
-    Value(message_value=Message(fields={'PartyID': Value(simple_value='3'),
-                                        'PartyIDSource': Value(simple_value='P'),
-                                        'PartyRole': Value(simple_value='12')}))]))}))
+trading_party_message = Value(message_value=Message(fields={
+    'NoPartyIDs': Value(list_value=ListValue(values=[
+        Value(message_value=Message(fields={
+            'PartyID': Value(simple_value='DEMO-CONN1'),
+            'PartyIDSource': Value(simple_value='D'),
+            'PartyRole': Value(simple_value='76')
+        })),
+        Value(message_value=Message(fields={
+            'PartyID': Value(simple_value='0'),
+            'PartyIDSource': Value(simple_value='P'),
+            'PartyRole': Value(simple_value='3')
+        })),
+        Value(message_value=Message(fields={
+            'PartyID': Value(simple_value='0'),
+            'PartyIDSource': Value(simple_value='P'),
+            'PartyRole': Value(simple_value='122')
+        })),
+        Value(message_value=Message(fields={
+            'PartyID': Value(simple_value='3'),
+            'PartyIDSource': Value(simple_value='P'),
+            'PartyRole': Value(simple_value='12')
+        }))
+    ]))
+}))
 
 new_order_single_message = Message(parent_event_id=parent_event_id,
                                    metadata=MessageMetadata(message_type='NewOrderSingle',
@@ -61,33 +72,47 @@ new_order_single_message = Message(parent_event_id=parent_event_id,
                                        'TradingParty': trading_party_message
                                    })
 
-trading_party_dict = {'NoPartyIDs': [{'PartyID': 'DEMO-CONN1',
-                                      'PartyIDSource': 'D',
-                                      'PartyRole': '76'},
-                                     {'PartyID': '0',
-                                      'PartyIDSource': 'P',
-                                      'PartyRole': '3'},
-                                     {'PartyID': '0',
-                                      'PartyIDSource': 'P',
-                                      'PartyRole': '122'},
-                                     {'PartyID': '3',
-                                      'PartyIDSource': 'P',
-                                      'PartyRole': '12'}]}
+trading_party_dict = {
+    'NoPartyIDs': [
+        {
+            'PartyID': 'DEMO-CONN1',
+            'PartyIDSource': 'D',
+            'PartyRole': '76'
+        },
+        {
+            'PartyID': '0',
+            'PartyIDSource': 'P',
+            'PartyRole': '3'
+        },
+        {
+            'PartyID': '0',
+            'PartyIDSource': 'P',
+            'PartyRole': '122'
+        },
+        {
+            'PartyID': '3',
+            'PartyIDSource': 'P',
+            'PartyRole': '12'
+        }
+    ]
+}
 
-new_order_single_dict = {'AccountType': '1',
-                         'ClOrdID': str(cl_ord_id),
-                         'DisplayQty': '30',
-                         'OrdType': '2',
-                         'OrderCapacity': 'A',
-                         'OrderQty': '30',
-                         'Price': '55',
-                         'SecondaryClOrdID': '11111',
-                         'SecurityID': '5221001',
-                         'SecurityIDSource': '8',
-                         'Side': '1',
-                         'TimeInForce': '0',
-                         'TradingParty': trading_party_dict,
-                         'TransactTime': transact_time}
+new_order_single_dict = {
+    'AccountType': '1',
+    'ClOrdID': str(cl_ord_id),
+    'DisplayQty': '30',
+    'OrdType': '2',
+    'OrderCapacity': 'A',
+    'OrderQty': '30',
+    'Price': '55',
+    'SecondaryClOrdID': '11111',
+    'SecurityID': '5221001',
+    'SecurityIDSource': '8',
+    'Side': '1',
+    'TimeInForce': '0',
+    'TradingParty': trading_party_dict,
+    'TransactTime': transact_time
+}
 
 
 def test_message_to_dict() -> None:
@@ -105,59 +130,53 @@ def test_dict_to_root_message_filter() -> None:
     root_message_filter = RootMessageFilter(
         messageType='MessageType',
         comparison_settings=RootComparisonSettings(),
-        message_filter=MessageFilter(
-            fields={
-                'FILTERS': ValueFilter(
-                    list_filter=ListValueFilter(
-                        values=[ValueFilter(
-                            message_filter=MessageFilter(
-                                fields={
-                                    'msg_filter1': ValueFilter(simple_filter=str('1')),
-                                    'msg_filter2': ValueFilter(simple_filter=str('2')),
-                                    'msg_filter3': ValueFilter(simple_filter=str('3')),
-                                    'msg_filter4': ValueFilter(simple_filter=str('4'))
-                                }
-                            )
-                        ),
-                            ValueFilter(
-                                message_filter=MessageFilter(
-                                    fields={
-                                        'msg_filter5': ValueFilter(simple_filter=str('5')),
-                                        'msg_filter6': ValueFilter(simple_filter=str('6')),
-                                        'msg_filter7': ValueFilter(simple_filter=str('7')),
-                                        'msg_filter8': ValueFilter(simple_filter=str('8'))
-                                    }
-                                )
-                            )
-                        ]
-                    )
-                )
-            }
-        ),
-        metadata_filter=MetadataFilter(
-            property_filters={
-                'md_filter1': MetadataFilter.SimpleFilter(value=str('1')),
-                'md_filter2': MetadataFilter.SimpleFilter(value=str('2')),
-                'md_filter3': MetadataFilter.SimpleFilter(value=str('3')),
-                'md_filter4': MetadataFilter.SimpleFilter(simple_list=SimpleList(simple_values=['4.1', '4.2']))
-            }
-        )
+        message_filter=MessageFilter(fields={
+            'FILTERS': ValueFilter(list_filter=ListValueFilter(values=[
+                ValueFilter(message_filter=MessageFilter(fields={
+                    'msg_filter1': ValueFilter(simple_filter=str('1')),
+                    'msg_filter2': ValueFilter(simple_filter=str('2')),
+                    'msg_filter3': ValueFilter(simple_filter=str('3')),
+                    'msg_filter4': ValueFilter(simple_filter=str('4'))
+                })),
+                ValueFilter(message_filter=MessageFilter(fields={
+                    'msg_filter5': ValueFilter(simple_filter=str('5')),
+                    'msg_filter6': ValueFilter(simple_filter=str('6')),
+                    'msg_filter7': ValueFilter(simple_filter=str('7')),
+                    'msg_filter8': ValueFilter(simple_filter=str('8'))
+                }))
+            ]))
+        }),
+        metadata_filter=MetadataFilter(property_filters={
+            'md_filter1': MetadataFilter.SimpleFilter(value=str('1')),
+            'md_filter2': MetadataFilter.SimpleFilter(value=str('2')),
+            'md_filter3': MetadataFilter.SimpleFilter(value=str('3')),
+            'md_filter4': MetadataFilter.SimpleFilter(simple_list=SimpleList(simple_values=['4.1', '4.2']))
+        })
     )
 
-    message_filter_dict = {'FILTERS': [{'msg_filter1': '1',
-                                        'msg_filter2': '2',
-                                        'msg_filter3': '3',
-                                        'msg_filter4': '4'},
+    message_filter_dict = {
+        'FILTERS': [
+            {
+                'msg_filter1': '1',
+                'msg_filter2': '2',
+                'msg_filter3': '3',
+                'msg_filter4': '4'
+            },
+            {
+                'msg_filter5': '5',
+                'msg_filter6': '6',
+                'msg_filter7': '7',
+                'msg_filter8': '8'
+            }
+        ]
+    }
 
-                                       {'msg_filter5': '5',
-                                        'msg_filter6': '6',
-                                        'msg_filter7': '7',
-                                        'msg_filter8': '8'}]}
-
-    metadata_filter_dict = {'md_filter1': '1',
-                            'md_filter2': '2',
-                            'md_filter3': '3',
-                            'md_filter4': ['4.1', '4.2']}
+    metadata_filter_dict = {
+        'md_filter1': '1',
+        'md_filter2': '2',
+        'md_filter3': '3',
+        'md_filter4': ['4.1', '4.2']
+    }
 
     assert dict_to_root_message_filter(message_type='MessageType',
                                        message_filter=message_filter_dict,
@@ -165,13 +184,20 @@ def test_dict_to_root_message_filter() -> None:
 
 
 def test_message_to_table() -> None:
-    listvalue_message = Value(message_value=Message(fields={'ListFields': Value(list_value=ListValue(values=[
-        Value(message_value=Message(fields={'List_SimpleField1': Value(simple_value='A'),
-                                            'List_SimpleField2': Value(simple_value='B')}))]))}))
+    listvalue_message = Value(message_value=Message(fields={
+        'ListFields': Value(list_value=ListValue(values=[
+            Value(message_value=Message(fields={
+                'List_SimpleField1': Value(simple_value='A'),
+                'List_SimpleField2': Value(simple_value='B')
+            }))
+        ]))
+    }))
 
-    message = Message(fields={'SimpleField1': Value(simple_value='1'),
-                              'SimpleField2': Value(simple_value='2'),
-                              'List': listvalue_message})
+    message = Message(fields={
+        'SimpleField1': Value(simple_value='1'),
+        'SimpleField2': Value(simple_value='2'),
+        'List': listvalue_message
+    })
 
     tree_table = TreeTable(columns_names=['Field Value'])
     tree_table.add_row('SimpleField1', '1')
