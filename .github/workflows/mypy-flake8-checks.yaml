@@ -24,7 +24,7 @@ jobs:
         pip install mypy
         python3 -m pip install types-protobuf
         
-        declare -a flake8_plugins=(
+        flake8_plugins="
           flake8
           flake8-bugbear
           flake8-builtins
@@ -37,17 +37,12 @@ jobs:
           flake8-quotes
           flake8-simplify
           pep8-naming
-          # flake8-cognitive-complexity
           flake8-expression-complexity
           flake8-import-order
           flake8-annotations-complexity
           flake8-annotations-coverage
-        )
-        
-        for plugin in ${flake8_plugins[*]}
-          do
-            eval "pip install "$plugin
-          done
+        "
+        pip install $flake8_plugins
     - name: Run MyPy
       continue-on-error: true
       run: mypy .
