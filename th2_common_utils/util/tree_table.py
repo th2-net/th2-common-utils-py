@@ -12,48 +12,44 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import enum
+from itertools import zip_longest
+from typing import List, Optional, Union
+
 from sortedcontainers import SortedDict
-from typing import Union
-
-from th2_common_utils.event_utils import EventUtils
+from th2_common_utils.event_utils import create_event_body
 
 
-class TableEntityType(str, enum.Enum):
+class AbstractTable:
 
-    ROW = 'row'
-    COLLECTION = 'collection'
-    TREE_TABLE = 'treeTable'
-
-
-class Row:
-
-    def __init__(self) -> None:
-        self.type = TableEntityType.ROW
-        self.columns = {}
-
-    def add_column(self, name: str, value: Union[str, int, float]):
-        self.columns[name] = value
-
-
-class Collection:
-
-    def __init__(self) -> None:
-        self.type = TableEntityType.COLLECTION
+    def __init__(self, columns_names: List[str]):
         self.rows = SortedDict()
+        self.columns_names = columns_names
 
-    def add_row(self, name: Union[str, int], row: Row):
-        self.rows[name] = row
+    def add_row(self, *values: Optional[Union[str, int, float]]) -> None:
+        if values:
+            row_name = values[0]
+            row_values = values[1:]
+            self.rows[row_name] = {
+                'type': 'row',
+                'columns': dict(zip_longest(self.columns_names, row_values, fillvalue=''))
+            }
+
+    def add_table(self, table_name: Union[str, int, float], table: 'Table') -> None:
+        self.rows[table_name] = table
 
 
-class TreeTable:
+class Table(AbstractTable):
 
-    def __init__(self) -> None:
-        self.type = TableEntityType.TREE_TABLE
-        self.rows = SortedDict()
+    def __init__(self, columns_names: List[str]):
+        super().__init__(columns_names)
+        self.type = 'collection'
 
-    def __bytes__(self):
-        return EventUtils.create_event_body(self)
 
-    def add_row(self, name: str, table_entity: Union[Row, Collection]):
-        self.rows[name] = table_entity
+class TreeTable(AbstractTable):
+
+    def __init__(self, columns_names: List[str]) -> None:
+        super().__init__(columns_names)
+        self.type = 'treeTable'
+
+    def __bytes__(self) -> bytes:
+        return create_event_body(self)

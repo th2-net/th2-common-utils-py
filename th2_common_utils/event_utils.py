@@ -12,84 +12,80 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from typing import Any, List, Optional, Union
 import uuid
 
 from google.protobuf.timestamp_pb2 import Timestamp
-from th2_grpc_common.common_pb2 import EventID, EventStatus, MessageID, Event
-
 from th2_common_utils.util.common import ComponentEncoder
+from th2_grpc_common.common_pb2 import Event, EventID, EventStatus, MessageID
 
 
-class EventUtils:
-    """This class contains methods for th2-events creating."""
+def create_event_body(component: Any) -> bytes:
+    """Creates event body (component) as bytes.
 
-    @staticmethod
-    def create_event_body(component) -> bytes:
-        """Creates event body (component) as bytes.
+    Args:
+        component: Event body to be converted into bytes.
 
-        Args:
-            component: Event body to be converted into bytes.
+    Returns:
+        Event body as bytes.
+    """
 
-        Returns:
-            Event body as bytes.
-        """
+    return component_encoder().encode(component).encode()
 
-        return EventUtils.component_encoder().encode(component).encode()
 
-    @staticmethod
-    def component_encoder() -> ComponentEncoder:
-        return ComponentEncoder()
+def component_encoder() -> ComponentEncoder:
+    return ComponentEncoder()
 
-    @staticmethod
-    def create_event_id() -> EventID:
-        """Creates event id as EventID class instance.
 
-        Returns:
-            EventID class instance with 'id' attribute.
-        """
+def create_event_id() -> EventID:
+    """Creates event id as EventID class instance.
 
-        return EventID(id=str(uuid.uuid1()))
+    Returns:
+        EventID class instance with 'id' attribute.
+    """
 
-    @staticmethod
-    def create_timestamp():
-        timestamp = Timestamp()
-        timestamp.GetCurrentTime()
-        return timestamp
+    return EventID(id=str(uuid.uuid1()))
 
-    @staticmethod
-    def create_event(id: EventID = None,
-                     parent_id: EventID = None,
-                     start_timestamp: Timestamp = None,
-                     end_timestamp: Timestamp = None,
-                     status: EventStatus = 'SUCCESS',
-                     name: str = 'Event',
-                     type: str = None,
-                     body: bytes = b'',
-                     attached_message_ids: [MessageID] = None) -> Event:
-        """Creates event as Event class instance.
 
-        Args:
-            id: ID of the event.
-            parent_id: Parent ID of the event.
-            start_timestamp: Start timestamp.
-            end_timestamp: End timestamp.
-            status: Event status ('SUCCESS' or 'FAILED').
-            name: Event name.
-            type: Event type.
-            body: Event body as bytes. TreeTable class instance as bytes can be passed.
-            attached_message_ids: Attached message IDs.
+def create_timestamp() -> Timestamp:
+    timestamp = Timestamp()
+    timestamp.GetCurrentTime()
+    return timestamp
 
-        Returns:
-            Event class instance with attributes.
-        """
 
-        return Event(
-            id=id or EventUtils.create_event_id(),
-            parent_id=parent_id,
-            start_timestamp=start_timestamp or EventUtils.create_timestamp(),
-            end_timestamp=end_timestamp or EventUtils.create_timestamp(),
-            status=status,
-            name=name,
-            type=type,
-            body=body,
-            attached_message_ids=attached_message_ids)
+def create_event(event_id: Optional[EventID] = None,
+                 parent_id: Optional[EventID] = None,
+                 start_timestamp: Optional[Timestamp] = None,
+                 end_timestamp: Optional[Timestamp] = None,
+                 status: Union[str, int] = EventStatus.SUCCESS,
+                 name: str = 'Event',
+                 event_type: str = '',
+                 body: bytes = b'',
+                 attached_message_ids: Optional[List[MessageID]] = None) -> Event:
+    """Creates event as Event class instance.
+
+    Args:
+        event_id: ID of the event.
+        parent_id: Parent ID of the event.
+        start_timestamp: Start timestamp.
+        end_timestamp: End timestamp.
+        status: Event status ('SUCCESS' or 'FAILED').
+        name: Event name.
+        event_type: Event type.
+        body: Event body as bytes. TreeTable class instance as bytes can be passed.
+        attached_message_ids: Attached message IDs.
+
+    Returns:
+        Event class instance with attributes.
+    """
+
+    return Event(
+        id=event_id or create_event_id(),
+        parent_id=parent_id,
+        start_timestamp=start_timestamp or create_timestamp(),
+        end_timestamp=end_timestamp or create_timestamp(),
+        status=status,  # type: ignore
+        name=name,
+        type=event_type,
+        body=body,
+        attached_message_ids=attached_message_ids)

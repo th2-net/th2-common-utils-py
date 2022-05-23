@@ -14,44 +14,46 @@
 
 
 from pprint import pformat
+from typing import Any, Dict, List, Union
 
-from th2_common_utils.converters import message_to_dict, _dict_to_message_convert_value, ValueType, TypeName
-from th2_grpc_common.common_pb2 import Value, ListValue, Message
+from th2_common_utils.converters import _dict_to_message_convert_value, message_to_dict, TypeName
+from th2_common_utils.util.common import SimpleType
+from th2_grpc_common.common_pb2 import ListValue, Message, Value
 
 
 # =========================
 # Value
 # =========================
 
-def value_get(self, item):
-    return getattr(self, self.WhichOneof(ValueType.KIND))
+def value_get(self: Value, item: SimpleType) -> Union[str, ListValue, Message]:
+    return getattr(self, self.WhichOneof('kind'))  # type: ignore
 
 
-Value.__get__ = value_get
+setattr(Value, '__get__', value_get)
 
 
 # =========================
 # ListValue
 # =========================
 
-def listvalue_getitem(self, index):
+def listvalue_getitem(self: ListValue, index: int) -> Union[str, List, Dict]:
     value = self.values[index]
-    return value.__get__(index)
+    return value.__get__(index)  # type: ignore
 
 
-def listvalue_len(self):
+def listvalue_len(self: ListValue) -> int:
     return len(self.values)
 
 
-ListValue.__getitem__ = listvalue_getitem
-ListValue.__len__ = listvalue_len
+setattr(ListValue, '__getitem__', listvalue_getitem)
+setattr(ListValue, '__len__', listvalue_len)
 
 
 # =========================
 # Message
 # =========================
 
-def message_setitem(self, key, value):
+def message_setitem(self: Message, key: str, value: Any) -> None:
     value_type = type(value).__name__
 
     if value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
@@ -72,23 +74,23 @@ def message_setitem(self, key, value):
         raise TypeError('Cannot set %s object as field value.' % value_type)
 
 
-def message_getitem(self, item):
+def message_getitem(self: Message, item: str) -> Union[str, List, Dict]:
     if item in self.fields:
         value = self.fields[item]
-        return value.__get__(item)
+        return value.__get__(item)  # type: ignore
     else:
         raise KeyError(item)
 
 
-def message_contains(self, item):
+def message_contains(self: Message, item: str) -> bool:
     return item in self.fields
 
 
-def message_repr(self):
+def message_repr(self: Message) -> str:
     return pformat(message_to_dict(self))
 
 
-Message.__setitem__ = message_setitem
-Message.__getitem__ = message_getitem
-Message.__contains__ = message_contains
-Message.__repr__ = message_repr
+setattr(Message, '__setitem__', message_setitem)
+setattr(Message, '__getitem__', message_getitem)
+setattr(Message, '__contains__', message_contains)
+setattr(Message, '__repr__', message_repr)

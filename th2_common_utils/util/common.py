@@ -13,9 +13,13 @@
 #   limitations under the License.
 
 from json import JSONEncoder
+from typing import Any, Union
+
+
+SimpleType = Union[str, int, float]
 
 
 class ComponentEncoder(JSONEncoder):
 
-    def default(self, o):
+    def default(self, o: Any) -> Any:
         return o.__dict__
