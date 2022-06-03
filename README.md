@@ -1,4 +1,4 @@
-# th2-common-utils-py
+# th2-common-utils-py (1.2.1)
 Python library with useful functions for **developers and QA needs**.
 
 ## Installation
@@ -43,19 +43,18 @@ from th2_common_utils import message_to_dict, dict_to_message # ...
 
 ### 3. Working with events
 
-`th2-common-utils` provides the class to work with events - `EventUtils`.
-
-Methods of `EventUtils` class:
+`th2-common-utils` provides methods to work with events:
 * `create_event_body(component)` - creates event body from `component` as bytes.
 * `create_event_id()` - creates EventID.
 * `create_event(id, parent_id, start_timestamp, end_timestamp, status, name, 
 type, body, attached_message_ids)` - creates event; all arguments are optional.
+* `create_timestamp()` - creates `Timestamp` with current time.
 
 To use functions above:
 ```python
-from th2_common_utils import EventUtils as eu
+from th2_common_utils import create_event, create_event_id
 
-my_event = eu.create_event(id=eu.create_event_id,
-                           name='My event',
-                           #... )
+my_event = create_event(id=create_event_id(),
+                        name='My event',
+                        #... )
 ```
