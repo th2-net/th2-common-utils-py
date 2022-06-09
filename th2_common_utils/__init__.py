@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
-from .converters import dict_to_message, dict_to_root_message_filter, message_to_dict, message_to_table
+from .converters.filter_converters import dict_to_root_message_filter
+from .converters.message_converters import dict_to_message, message_to_dict, message_to_table
 from .event_utils import create_event, create_event_body, create_event_id, create_timestamp
 from .message_fields_access import *

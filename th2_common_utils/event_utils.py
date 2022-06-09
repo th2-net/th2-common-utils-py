@@ -50,6 +50,7 @@ def create_event_id() -> EventID:
 def create_timestamp() -> Timestamp:
     timestamp = Timestamp()
     timestamp.GetCurrentTime()
+
     return timestamp
 
 

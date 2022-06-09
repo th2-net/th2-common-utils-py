@@ -15,10 +15,11 @@
 from datetime import datetime
 import random
 
-from th2_common_utils import dict_to_message, dict_to_root_message_filter, message_to_dict, message_to_table
+from th2_common_utils.converters.filter_converters import dict_to_root_message_filter
+from th2_common_utils.converters.message_converters import dict_to_message, message_to_dict, message_to_table
 from th2_common_utils.util.tree_table import Table, TreeTable
-from th2_grpc_common.common_pb2 import ConnectionID, EventID, ListValue, ListValueFilter, Message, MessageFilter, \
-    MessageID, MessageMetadata, MetadataFilter, RootComparisonSettings, RootMessageFilter, \
+from th2_grpc_common.common_pb2 import ConnectionID, EventID, FilterOperation, ListValue, ListValueFilter, Message, \
+    MessageFilter, MessageID, MessageMetadata, MetadataFilter, NullValue, RootComparisonSettings, RootMessageFilter, \
     SimpleList, Value, ValueFilter
 
 cl_ord_id = random.randint(10 ** 6, (10 ** 7) - 1)
@@ -131,56 +132,94 @@ def test_dict_to_root_message_filter() -> None:
         messageType='MessageType',
         comparison_settings=RootComparisonSettings(),
         message_filter=MessageFilter(fields={
-            'FILTERS': ValueFilter(list_filter=ListValueFilter(values=[
-                ValueFilter(message_filter=MessageFilter(fields={
-                    'msg_filter1': ValueFilter(simple_filter=str('1')),
-                    'msg_filter2': ValueFilter(simple_filter=str('2')),
-                    'msg_filter3': ValueFilter(simple_filter=str('3')),
-                    'msg_filter4': ValueFilter(simple_filter=str('4'))
-                })),
-                ValueFilter(message_filter=MessageFilter(fields={
-                    'msg_filter5': ValueFilter(simple_filter=str('5')),
-                    'msg_filter6': ValueFilter(simple_filter=str('6')),
-                    'msg_filter7': ValueFilter(simple_filter=str('7')),
-                    'msg_filter8': ValueFilter(simple_filter=str('8'))
-                }))
-            ]))
+            'FILTER1': ValueFilter(
+                operation=FilterOperation.LESS,
+                key=True,
+                list_filter=ListValueFilter(values=[
+                    ValueFilter(message_filter=MessageFilter(fields={
+                        'msg_filter1': ValueFilter(simple_filter=str('1')),
+                        'msg_filter2': ValueFilter(simple_filter=str('2')),
+                    })),
+                    ValueFilter(
+                        operation=FilterOperation.NOT_EQUAL,
+                        key=False,
+                        message_filter=MessageFilter(fields={
+                            'msg_filter3': ValueFilter(simple_filter=str('3')),
+                            'msg_filter4': ValueFilter(simple_filter=str('4')),
+                        })
+                    ),
+                    ValueFilter(operation=FilterOperation.EQUAL,
+                                key=False,
+                                simple_list=SimpleList(simple_values=['a', 'b', 'c'])),
+                    ValueFilter(null_value=NullValue.NULL_VALUE)
+                ])
+            )
         }),
         metadata_filter=MetadataFilter(property_filters={
             'md_filter1': MetadataFilter.SimpleFilter(value=str('1')),
             'md_filter2': MetadataFilter.SimpleFilter(value=str('2')),
-            'md_filter3': MetadataFilter.SimpleFilter(value=str('3')),
-            'md_filter4': MetadataFilter.SimpleFilter(simple_list=SimpleList(simple_values=['4.1', '4.2']))
+            'md_filter3': MetadataFilter.SimpleFilter(operation=FilterOperation.EQUAL,
+                                                      key=True,
+                                                      value=str('3')),
+            'md_filter4': MetadataFilter.SimpleFilter(operation=FilterOperation.NOT_EQUAL,
+                                                      key=False,
+                                                      simple_list=SimpleList(simple_values=['4.1', '4.2']))
         })
     )
 
-    message_filter_dict = {
-        'FILTERS': [
-            {
-                'msg_filter1': '1',
-                'msg_filter2': '2',
-                'msg_filter3': '3',
-                'msg_filter4': '4'
-            },
-            {
-                'msg_filter5': '5',
-                'msg_filter6': '6',
-                'msg_filter7': '7',
-                'msg_filter8': '8'
+    root_message_filter_from_dict = dict_to_root_message_filter(
+        message_type='MessageType',
+        message_filter={
+            'FILTER1': {
+                'operation': FilterOperation.LESS,
+                'key': True,
+                'value': [
+                    {
+                        'value': {
+                            'msg_filter1': '1',
+                            'msg_filter2': '2'
+                        }
+                    },
+                    {
+                        'operation': FilterOperation.NOT_EQUAL,
+                        'key': False,
+                        'value': {
+                            'msg_filter3': '3',
+                            'msg_filter4': '4',
+                        }
+                    },
+                    {
+                        'operation': FilterOperation.EQUAL,
+                        'key': False,
+                        'value': ['a', 'b', 'c']
+                    },
+                    {
+                        'value': None
+                    }
+                ]
             }
-        ]
-    }
+        },
+        metadata_filter={
+            'md_filter1': {
+                'value': '1'
+            },
+            'md_filter2': {
+                'value': '2'
+            },
+            'md_filter3': {
+                'operation': FilterOperation.EQUAL,
+                'key': True,
+                'value': '3'
+            },
+            'md_filter4': {
+                'operation': FilterOperation.NOT_EQUAL,
+                'key': False,
+                'value': ['4.1', '4.2']
+            }
+        }
+    )
 
-    metadata_filter_dict = {
-        'md_filter1': '1',
-        'md_filter2': '2',
-        'md_filter3': '3',
-        'md_filter4': ['4.1', '4.2']
-    }
-
-    assert dict_to_root_message_filter(message_type='MessageType',
-                                       message_filter=message_filter_dict,
-                                       metadata_filter=metadata_filter_dict) == root_message_filter
+    assert root_message_filter_from_dict == root_message_filter
 
 
 def test_message_to_table() -> None:
