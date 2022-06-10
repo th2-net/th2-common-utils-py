@@ -40,10 +40,10 @@ def __is_list_value_filter(value: List[Any]) -> bool:
 
 
 def __is_simple_list(value: List[Any]) -> bool:
-    if any(not isinstance(v, (str, int, float)) for v in value):
-        return False
+    if all(isinstance(v, (str, int, float)) for v in value):
+        return True
 
-    return True
+    return False
 
 
 def __convert_entity_to_simple_filer(entity: Any) -> MetadataFilter.SimpleFilter:
