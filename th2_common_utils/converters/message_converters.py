@@ -141,7 +141,7 @@ def dict_to_message(fields: dict,
     return Message(parent_event_id=parent_event_id,
                    metadata=MessageMetadata(id=MessageID(connection_id=ConnectionID(session_alias=session_alias)),
                                             message_type=message_type),
-                   fields={field: _dict_to_message_convert_value(filed_value) for field, filed_value in fields.items()})
+                   fields={field: _dict_to_message_convert_value(field_value) for field, field_value in fields.items()})
 
 
 def _message_to_table_convert_value(message_value: Union[str, List, Dict],
@@ -180,7 +180,7 @@ def _message_to_table_convert_value(message_value: Union[str, List, Dict],
 
 
 def message_to_table(message: Union[Dict, Message]) -> TreeTable:
-    """Converts th2-message or dict to a tree table.
+    """Converts th2-message or dict to a TreeTable.
 
     Table can have only two columns. Nested tables are allowed. You will lose 'parent_event_id' and 'metadata'
     of the message.

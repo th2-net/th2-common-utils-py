@@ -33,17 +33,17 @@ class FilterField(str, Enum):
 
 
 def __is_list_value_filter(value: List[Any]) -> bool:
-    if isinstance(value[0], Dict):
+    if all(isinstance(v, Dict) for v in value):
         return True
 
     return False
 
 
 def __is_simple_list(value: List[Any]) -> bool:
-    if isinstance(value[0], (str, int, float)):
-        return True
+    if any(not isinstance(v, (str, int, float)) for v in value):
+        return False
 
-    return False
+    return True
 
 
 def __convert_entity_to_simple_filer(entity: Any) -> MetadataFilter.SimpleFilter:
@@ -139,7 +139,7 @@ def dict_to_root_message_filter(message_type: str = '',
                                 check_repeating_group_order: bool = False,
                                 time_precision: Optional[Duration] = None,
                                 decimal_precision: str = '') -> RootMessageFilter:
-    """Converts a dict to root message filter.
+    """Converts a dict to RootMessageFilter.
 
     Args:
         message_type: Message type.
@@ -152,7 +152,7 @@ def dict_to_root_message_filter(message_type: str = '',
         decimal_precision: Decimal Precision (is used when creating filter's comparison settings).
 
     Returns:
-        Root message filter class instance.
+        RootMessageFilter class instance.
 
     Raises:
         TypeError: Occurs when MessageFilter or MetadataFilter as dicts contain a field of the unsupported type.
