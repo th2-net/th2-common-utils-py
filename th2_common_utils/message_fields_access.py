@@ -12,11 +12,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
 from pprint import pformat
 from typing import Any, Dict, List, Union
 
-from th2_common_utils.converters import _dict_to_message_convert_value, message_to_dict, TypeName
+from th2_common_utils.converters.message_converters import _dict_to_message_convert_value, message_to_dict, TypeName
 from th2_common_utils.util.common import SimpleType
 from th2_grpc_common.common_pb2 import ListValue, Message, Value
 
