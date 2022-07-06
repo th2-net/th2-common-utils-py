@@ -15,7 +15,8 @@
 from pprint import pformat
 from typing import Any, Dict, List, Union
 
-from th2_common_utils.converters.message_converters import _dict_to_message_convert_value, message_to_dict, TypeName
+from th2_common_utils.converters.message_converters.dict_to_message import _dict_to_message_convert_value
+from th2_common_utils.converters.message_converters.message_to_dict import message_to_dict
 from th2_common_utils.util.common import SimpleType
 from th2_grpc_common.common_pb2 import ListValue, Message, Value
 
@@ -53,24 +54,22 @@ setattr(ListValue, '__len__', listvalue_len)
 # =========================
 
 def message_setitem(self: Message, key: str, value: Any) -> None:
-    value_type = type(value).__name__
-
-    if value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
+    if isinstance(value, (str, int, float)):
         self.fields[key].simple_value = str(value)
 
-    elif value_type == TypeName.VALUE:
+    elif isinstance(value, Value):
         self.fields[key].simple_value = value.simple_value
 
-    elif value_type in {TypeName.LIST, TypeName.LIST_VALUE}:
+    elif isinstance(value, (list, ListValue)):
         th2_value = _dict_to_message_convert_value(value)
         self.fields[key].list_value.CopyFrom(th2_value.list_value)
 
-    elif value_type in {TypeName.DICT, TypeName.MESSAGE}:
+    elif isinstance(value, (dict, Message)):
         th2_value = _dict_to_message_convert_value(value)
         self.fields[key].message_value.CopyFrom(th2_value.message_value)
 
     else:
-        raise TypeError('Cannot set %s object as field value.' % value_type)
+        raise TypeError(f'Cannot set {type(value)} object as field value: {value}')
 
 
 def message_getitem(self: Message, item: str) -> Union[str, List, Dict]:

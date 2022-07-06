@@ -12,9 +12,25 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from .converters.filter_converters import dict_to_root_message_filter
-from .converters.message_converters.dict_to_message import dict_to_message
-from .converters.message_converters.message_to_dict import message_to_dict
-from .converters.message_converters.message_to_table import message_to_table
-from .event_utils import create_event, create_event_body, create_event_id, create_timestamp
-from .message_fields_access import *
+import json
+from pathlib import Path
+from typing import Union
+
+from google.protobuf.json_format import ParseDict
+from th2_grpc_common.common_pb2 import Message
+
+
+def json_to_message(json_path: Union[str, Path]) -> Message:
+    """Read json file and convert its content to th2-message.
+
+    Args:
+        json_path: Path to json file.
+
+    Returns:
+        th2-message
+    """
+
+    with open(json_path, 'r') as read_content:
+        json_dict = json.load(read_content)
+
+    return ParseDict(json_dict, Message())

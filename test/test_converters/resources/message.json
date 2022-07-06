@@ -1,0 +1,35 @@
+{
+  "metadata":{
+    "id":{
+      "connectionId":{
+        "sessionAlias":"VDnEgqeb"
+      },
+      "direction":"SECOND"
+    },
+    "messageType":"NewOrderSingle",
+    "protocol":"FIX"
+  },
+  "fields":{
+    "Account":{
+      "simpleValue":"CLIENT1"
+    },
+    "OrderQty":{
+      "simpleValue":"4"
+    },
+    "OrdType":{
+      "simpleValue":"2"
+    },
+    "Price":{
+      "simpleValue":"2"
+    },
+    "trailer":{
+      "messageValue":{
+        "fields":{
+          "CheckSum":{
+            "simpleValue":"127"
+          }
+        }
+      }
+    }
+  }
+}
