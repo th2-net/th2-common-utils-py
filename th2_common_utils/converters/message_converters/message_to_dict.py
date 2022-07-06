@@ -15,6 +15,7 @@
 from functools import lru_cache, singledispatch
 from typing import Any, Dict, Optional, Union
 
+from google.protobuf.json_format import MessageToDict
 from th2_grpc_common.common_pb2 import ListValue, Message, Value
 
 DictMessageType = Union[str, list, dict]
@@ -23,13 +24,11 @@ DictMessageType = Union[str, list, dict]
 def message_to_dict(message: Message) -> Dict[str, Optional[DictMessageType]]:
     """Converts th2-message to a dict.
 
-    Fields of th2-message will be converted to a dict. You will lose all metadata.
-
     Args:
         message: th2-message.
 
     Returns:
-        th2-message fields (message.fields) as a dict. All nested entities will be also converted.
+        th2-message as a dict. All nested entities will be also converted.
 
         Conversion rules:
             Value.simple_value - str
@@ -41,8 +40,12 @@ def message_to_dict(message: Message) -> Dict[str, Optional[DictMessageType]]:
     """
 
     return {
-        field: _message_to_dict_convert_value(__get_inner_value(field_value))
-        for field, field_value in message.fields.items()
+        'parent_event_id': message.parent_event_id.id,
+        'metadata': MessageToDict(message.metadata),
+        'fields': {
+            field: _message_to_dict_convert_value(__get_inner_value(field_value))
+            for field, field_value in message.fields.items()
+        }
     }
 
 

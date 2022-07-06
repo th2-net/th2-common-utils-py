@@ -37,7 +37,7 @@ def message_to_table(message: Union[Dict, Message]) -> TreeTable:
     """
 
     if isinstance(message, Message):
-        message = message_to_dict(message)
+        message = message_to_dict(message)['fields']
 
     table = TreeTable(columns_names=['Field Value'])
 

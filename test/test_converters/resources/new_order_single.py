@@ -65,9 +65,20 @@ trading_party_dict = {
 }
 
 new_order_single_dict = {
-    'OrdType': '1',
-    'AccountType': '2',
-    'OrderCapacity': 'A',
-    'Price': '100',
-    'TradingParty': trading_party_dict
+    'metadata': {
+        'id': {
+            'connectionId': {
+                'sessionAlias': 'kNglFzrW'
+            }
+        },
+        'messageType': 'NewOrderSingle'
+    },
+    'parent_event_id': '',
+    'fields': {
+        'OrdType': '1',
+        'AccountType': '2',
+        'OrderCapacity': 'A',
+        'Price': '100',
+        'TradingParty': trading_party_dict
+    }
 }

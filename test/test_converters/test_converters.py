@@ -31,7 +31,7 @@ def test_message_to_dict() -> None:
 
 
 def test_dict_to_message() -> None:
-    assert dict_to_message(fields=new_order_single_dict,
+    assert dict_to_message(fields=new_order_single_dict['fields'],
                            parent_event_id=parent_event_id,
                            session_alias=session_alias,
                            message_type='NewOrderSingle') == new_order_single_message
