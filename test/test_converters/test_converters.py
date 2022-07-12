@@ -12,18 +12,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from pathlib import Path
+import json
 from test.test_converters.resources import json_message, table
 from test.test_converters.resources.new_order_single import new_order_single_dict, new_order_single_message, \
     parent_event_id, session_alias
 from test.test_converters.resources.root_message_filter import message_filter_dict, metadata_filter_dict, \
     root_message_filter
+from typing import Any
+from unittest.mock import MagicMock, patch
 
 from th2_common_utils.converters.filter_converters import dict_to_root_message_filter
-from th2_common_utils.converters.message_converters.dict_to_message import dict_to_message
-from th2_common_utils.converters.message_converters.json_to_message import json_to_message
-from th2_common_utils.converters.message_converters.message_to_dict import message_to_dict
-from th2_common_utils.converters.message_converters.message_to_table import message_to_table
+from th2_common_utils.converters.message_converters import dict_to_message, json_to_message, message_to_dict, \
+    message_to_table
 
 
 def test_message_to_dict() -> None:
@@ -47,7 +47,8 @@ def test_message_to_table() -> None:
     assert bytes(table.tree_table) == bytes(message_to_table(table.message))
 
 
-def test_json_to_message() -> None:
-    json_path = Path(__file__).parent / 'resources' / 'message.json'
+@patch('json.load')
+def test_json_to_message(json_load: Any) -> None:
+    json_load.return_value = json.loads(json_message.json_message)
 
-    assert json_to_message(json_path) == json_message.message
+    assert json_to_message(json_path=MagicMock()) == json_message.message

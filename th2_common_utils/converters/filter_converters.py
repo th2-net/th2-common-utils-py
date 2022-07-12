@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from enum import Enum
-from functools import lru_cache, singledispatch
+from functools import singledispatch
 from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.duration_pb2 import Duration
@@ -106,7 +106,7 @@ def _create_value_filter(entity: Any) -> ValueFilter:
 
 @singledispatch
 def __convert_entity_to_value_filter(entity: Any) -> ValueFilter:
-    raise TypeError('Cannot convert %s object to ValueFilter: %s' % (type(entity), entity))
+    raise TypeError(f'Cannot convert {type(entity)} object to ValueFilter: {entity}')
 
 
 @__convert_entity_to_value_filter.register(ValueFilter)
@@ -114,7 +114,6 @@ def _(value_filter: ValueFilter) -> ValueFilter:
     return value_filter
 
 
-@lru_cache(maxsize=128)
 @__convert_entity_to_value_filter.register(str)
 @__convert_entity_to_value_filter.register(int)
 @__convert_entity_to_value_filter.register(float)
@@ -170,7 +169,7 @@ def dict_to_metadata_filter(dict_obj: Dict[str, Any]) -> MetadataFilter:
 
 @singledispatch
 def _create_simple_filter(entity: Any) -> MetadataFilter.SimpleFilter:
-    raise TypeError('Cannot convert %s object to MetadataFilter.SimpleFilter: %s' % (type(entity), entity))
+    raise TypeError(f'Cannot convert {type(entity)} object to MetadataFilter.SimpleFilter: {entity}')
 
 
 @_create_simple_filter.register(MetadataFilter.SimpleFilter)
@@ -190,7 +189,7 @@ def _(dict_obj: dict) -> MetadataFilter.SimpleFilter:
 
 @singledispatch
 def __convert_entity_to_simple_filter(entity: Any) -> MetadataFilter.SimpleFilter:
-    raise TypeError('Cannot convert %s object to MetadataFilter.SimpleFilter: %s' % (type(entity), entity))
+    raise TypeError(f'Cannot convert {type(entity)} object to MetadataFilter.SimpleFilter: {entity}')
 
 
 @__convert_entity_to_simple_filter.register(list)
@@ -201,7 +200,6 @@ def _(list_obj: list) -> MetadataFilter.SimpleFilter:
     raise TypeError(f'Expected list to contain strings: {list_obj}')
 
 
-@lru_cache(maxsize=128)
 @__convert_entity_to_simple_filter.register(str)
 @__convert_entity_to_simple_filter.register(int)
 @__convert_entity_to_simple_filter.register(float)
