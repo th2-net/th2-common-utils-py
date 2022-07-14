@@ -13,10 +13,10 @@
 #   limitations under the License.
 
 from enum import Enum
+from functools import singledispatch
 from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.duration_pb2 import Duration
-from th2_common_utils.converters.message_converters import TypeName
 from th2_grpc_common.common_pb2 import ListValueFilter, MessageFilter, MetadataFilter, NullValue, \
     RootComparisonSettings, RootMessageFilter, SimpleList, ValueFilter
 
@@ -30,103 +30,6 @@ class FilterField(str, Enum):
     OPERATION = 'operation'
     KEY = 'key'
     VALUE = 'value'
-
-
-def __is_list_value_filter(value: List[Any]) -> bool:
-    if all(isinstance(v, Dict) for v in value):
-        return True
-
-    return False
-
-
-def __is_simple_list(value: List[Any]) -> bool:
-    if all(isinstance(v, (str, int, float)) for v in value):
-        return True
-
-    return False
-
-
-def __convert_entity_to_simple_filer(entity: Any) -> MetadataFilter.SimpleFilter:
-    entity_type = type(entity).__name__
-
-    if entity_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
-        return MetadataFilter.SimpleFilter(value=str(entity))
-
-    elif entity_type == TypeName.LIST and __is_simple_list(entity):
-        return MetadataFilter.SimpleFilter(simple_list=SimpleList(simple_values=list(map(str, entity))))
-
-    else:
-        raise TypeError('Cannot convert %s object to MetadataFilter.SimpleFilter: %s' % (type(entity), entity))
-
-
-def _create_simple_filter(entity: Any) -> MetadataFilter.SimpleFilter:
-    entity_type = type(entity).__name__
-
-    if entity_type == TypeName.SIMPLE_FILTER:
-        return entity  # type: ignore
-
-    elif entity_type == TypeName.DICT:
-        simple_filter = __convert_entity_to_simple_filer(entity[FilterField.VALUE])
-
-        simple_filter.operation = entity.get(FilterField.OPERATION, ProtobufDefaults.INT.value)
-        simple_filter.key = entity.get(FilterField.KEY, ProtobufDefaults.BOOL.value)
-
-        return simple_filter
-
-    else:
-        raise TypeError('Cannot convert %s object to MetadataFilter.SimpleFilter: %s' % (type(entity), entity))
-
-
-def __convert_entity_to_value_filter(entity: Any) -> ValueFilter:
-    entity_type = type(entity).__name__
-
-    if entity_type == TypeName.VALUE_FILTER:
-        return entity  # type: ignore
-
-    elif entity_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
-        return ValueFilter(simple_filter=str(entity))
-
-    elif entity_type == TypeName.LIST and __is_simple_list(entity):
-        return ValueFilter(simple_list=SimpleList(simple_values=list(map(str, entity))))
-
-    elif entity_type == TypeName.LIST and __is_list_value_filter(entity):
-        return ValueFilter(list_filter=ListValueFilter(values=list(map(_create_value_filter, entity))))
-
-    elif entity_type == TypeName.DICT:
-        return ValueFilter(message_filter=dict_to_message_filter(entity))
-
-    elif entity_type == TypeName.NONE:
-        return ValueFilter(null_value=NullValue.NULL_VALUE)
-
-    else:
-        raise TypeError('Cannot convert %s object to ValueFilter: %s' % (type(entity), entity))
-
-
-def _create_value_filter(entity: Any) -> ValueFilter:
-    if isinstance(entity, Dict):
-        value_filter = __convert_entity_to_value_filter(entity.get(FilterField.VALUE))
-
-        value_filter.operation = entity.get(FilterField.OPERATION, ProtobufDefaults.INT.value)
-        value_filter.key = entity.get(FilterField.KEY, ProtobufDefaults.BOOL.value)
-
-        return value_filter
-
-    else:
-        return __convert_entity_to_value_filter(entity)
-
-
-def dict_to_message_filter(entity: Dict[str, Any]) -> MessageFilter:
-    return MessageFilter(fields={
-        filter_name: _create_value_filter(filter_value)
-        for filter_name, filter_value in entity.items()
-    })
-
-
-def dict_to_metadata_filter(entity: Dict[str, Any]) -> MetadataFilter:
-    return MetadataFilter(property_filters={
-        filter_name: _create_simple_filter(filter_value)
-        for filter_name, filter_value in entity.items()
-    })
 
 
 MetadataDict = Dict[str, Any]
@@ -157,6 +60,7 @@ def dict_to_root_message_filter(message_type: str = '',
     Raises:
         TypeError: Occurs when MessageFilter or MetadataFilter as dicts contain a field of the unsupported type.
     """
+
     if message_filter is None:
         message_filter = MessageFilter()
     elif isinstance(message_filter, Dict):
@@ -175,3 +79,129 @@ def dict_to_root_message_filter(message_type: str = '',
                                  check_repeating_group_order=check_repeating_group_order,
                                  time_precision=time_precision,
                                  decimal_precision=decimal_precision))
+
+
+# =========================
+# MessageFilter
+# =========================
+
+def dict_to_message_filter(dict_obj: Dict[str, Any]) -> MessageFilter:
+    return MessageFilter(fields={
+        filter_name: _create_value_filter(filter_value)
+        for filter_name, filter_value in dict_obj.items()
+    })
+
+
+def _create_value_filter(entity: Any) -> ValueFilter:
+    if isinstance(entity, Dict):
+        value_filter = __convert_entity_to_value_filter(entity.get(FilterField.VALUE))
+        value_filter.operation = entity.get(FilterField.OPERATION, ProtobufDefaults.INT.value)
+        value_filter.key = entity.get(FilterField.KEY, ProtobufDefaults.BOOL.value)
+
+        return value_filter
+
+    else:
+        return __convert_entity_to_value_filter(entity)
+
+
+@singledispatch
+def __convert_entity_to_value_filter(entity: Any) -> ValueFilter:
+    raise TypeError(f'Cannot convert {type(entity)} object to ValueFilter: {entity}')
+
+
+@__convert_entity_to_value_filter.register(ValueFilter)
+def _(value_filter: ValueFilter) -> ValueFilter:
+    return value_filter
+
+
+@__convert_entity_to_value_filter.register(str)
+@__convert_entity_to_value_filter.register(int)
+@__convert_entity_to_value_filter.register(float)
+def _(simple_obj: Union[str, int, float]) -> ValueFilter:
+    return ValueFilter(simple_filter=str(simple_obj))
+
+
+@__convert_entity_to_value_filter.register(list)
+def _(list_obj: list) -> ValueFilter:
+    if __is_simple_list(list_obj):
+        return ValueFilter(simple_list=SimpleList(simple_values=list(map(str, list_obj))))
+
+    elif __is_list_value_filter(list_obj):
+        return ValueFilter(list_filter=ListValueFilter(values=list(map(_create_value_filter, list_obj))))
+
+    raise TypeError(f'Expected list to contain strings or dicts: {list_obj}')
+
+
+@__convert_entity_to_value_filter.register(dict)
+def _(dict_obj: dict) -> ValueFilter:
+    return ValueFilter(message_filter=dict_to_message_filter(dict_obj))
+
+
+@__convert_entity_to_value_filter.register(type(None))
+def _(none_obj: None) -> ValueFilter:
+    return ValueFilter(null_value=NullValue.NULL_VALUE)
+
+
+def __is_list_value_filter(list_obj: List[Any]) -> bool:
+    if all(isinstance(v, dict) for v in list_obj):
+        return True
+
+    return False
+
+
+def __is_simple_list(list_obj: list) -> bool:
+    if all(isinstance(v, str) for v in list_obj):
+        return True
+
+    return False
+
+
+# =========================
+# MetadataFilter
+# =========================
+
+def dict_to_metadata_filter(dict_obj: Dict[str, Any]) -> MetadataFilter:
+    return MetadataFilter(property_filters={
+        filter_name: _create_simple_filter(filter_value)
+        for filter_name, filter_value in dict_obj.items()
+    })
+
+
+@singledispatch
+def _create_simple_filter(entity: Any) -> MetadataFilter.SimpleFilter:
+    raise TypeError(f'Cannot convert {type(entity)} object to MetadataFilter.SimpleFilter: {entity}')
+
+
+@_create_simple_filter.register(MetadataFilter.SimpleFilter)
+def _(simple_filter: MetadataFilter.SimpleFilter) -> MetadataFilter.SimpleFilter:
+    return simple_filter
+
+
+@_create_simple_filter.register(dict)
+def _(dict_obj: dict) -> MetadataFilter.SimpleFilter:
+    simple_filter = __convert_entity_to_simple_filter(dict_obj[FilterField.VALUE])
+
+    simple_filter.operation = dict_obj.get(FilterField.OPERATION, ProtobufDefaults.INT.value)
+    simple_filter.key = dict_obj.get(FilterField.KEY, ProtobufDefaults.BOOL.value)
+
+    return simple_filter
+
+
+@singledispatch
+def __convert_entity_to_simple_filter(entity: Any) -> MetadataFilter.SimpleFilter:
+    raise TypeError(f'Cannot convert {type(entity)} object to MetadataFilter.SimpleFilter: {entity}')
+
+
+@__convert_entity_to_simple_filter.register(list)
+def _(list_obj: list) -> MetadataFilter.SimpleFilter:
+    if __is_simple_list(list_obj):
+        return MetadataFilter.SimpleFilter(simple_list=SimpleList(simple_values=list(map(str, list_obj))))
+
+    raise TypeError(f'Expected list to contain strings: {list_obj}')
+
+
+@__convert_entity_to_simple_filter.register(str)
+@__convert_entity_to_simple_filter.register(int)
+@__convert_entity_to_simple_filter.register(float)
+def _(simple_obj: Union[str, int, float]) -> MetadataFilter.SimpleFilter:
+    return MetadataFilter.SimpleFilter(value=str(simple_obj))

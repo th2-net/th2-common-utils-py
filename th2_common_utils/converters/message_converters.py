@@ -12,37 +12,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import enum
+import json
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+from google.protobuf.json_format import MessageToDict, ParseDict
 from th2_common_utils.util.tree_table import Table, TreeTable
 from th2_grpc_common.common_pb2 import ConnectionID, EventID, ListValue, Message, \
     MessageID, MessageMetadata, Value
-
-
-class ValueType(str, enum.Enum):
-
-    SIMPLE: str = 'simple_value'
-    LIST: str = 'list_value'
-    MESSAGE: str = 'message_value'
-
-
-class TypeName(str, enum.Enum):
-
-    STR = 'str'
-    INT = 'int'
-    FLOAT = 'float'
-    LIST = 'list'
-    DICT = 'dict'
-    NONE = 'NoneType'
-
-    VALUE = 'Value'
-    LIST_VALUE = 'ListValue'
-    MESSAGE = 'Message'
-
-    VALUE_FILTER = 'ValueFilter'
-    SIMPLE_FILTER = 'MetadataFilter.SimpleFilter'
-
 
 DictMessageType = Union[str, List, Dict]
 
@@ -50,65 +27,64 @@ DictMessageType = Union[str, List, Dict]
 def _message_to_dict_convert_value(value: Value) -> Optional[DictMessageType]:
     value_kind = value.WhichOneof('kind')
 
-    if value_kind == ValueType.SIMPLE:
+    if value_kind == 'simple_value':
         return value.simple_value  # type: ignore
 
-    elif value_kind == ValueType.LIST:
+    elif value_kind == 'list_value':
         return list(map(_message_to_dict_convert_value, value.list_value.values))
 
-    elif value_kind == ValueType.MESSAGE:
+    elif value_kind == 'message_value':
         return {
             field: _message_to_dict_convert_value(field_value)
             for field, field_value in value.message_value.fields.items()
         }
 
     else:
-        raise TypeError('Expected simple_value, list_value or message_value. %s object received: %s'
-                        % (type(value), value))
+        raise TypeError(f'Expected simple_value, list_value or message_value. {type(value)} object received: {value}')
 
 
 def message_to_dict(message: Message) -> Dict[str, Optional[DictMessageType]]:
     """Converts th2-message to a dict.
-
     Fields of th2-message will be converted to a dict. You will lose all metadata.
-
     Args:
         message: th2-message.
-
     Returns:
         th2-message fields (message.fields) as a dict. All nested entities will be also converted.
-
         Conversion rules:
             Value.simple_value - str
             Value.list_value - list
             Value.message_value - dict
-
     Raises:
         TypeError: Occurs when 'message.fields' contains a field not of the 'Value' type.
     """
 
-    return {field: _message_to_dict_convert_value(field_value) for field, field_value in message.fields.items()}
+    return {
+        'parent_event_id': message.parent_event_id.id,
+        'metadata': MessageToDict(message.metadata),
+        'fields': {
+            field: _message_to_dict_convert_value(field_value)
+            for field, field_value in message.fields.items()
+        }
+    }
 
 
 def _dict_to_message_convert_value(entity: Any) -> Value:
-    value_type = type(entity).__name__
-
-    if value_type in {TypeName.STR, TypeName.INT, TypeName.FLOAT}:
+    if isinstance(entity, (str, int, float)):
         return Value(simple_value=str(entity))
-    elif value_type == TypeName.LIST:
+    elif isinstance(entity, list):
         return Value(list_value=ListValue(values=list(map(_dict_to_message_convert_value, entity))))
-    elif value_type == TypeName.DICT:
+    elif isinstance(entity, dict):
         return Value(message_value=Message(fields={k: _dict_to_message_convert_value(v) for k, v in entity.items()}))
 
-    elif value_type == TypeName.VALUE:
-        return entity  # type: ignore
-    elif value_type == TypeName.LIST_VALUE:
+    elif isinstance(entity, Value):
+        return entity
+    elif isinstance(entity, ListValue):
         return Value(list_value=entity)
-    elif value_type == TypeName.MESSAGE:
+    elif isinstance(entity, Message):
         return Value(message_value=entity)
 
     else:
-        raise TypeError('Cannot convert %s object.' % value_type)
+        raise TypeError(f'Cannot convert {type(entity)} object.')
 
 
 def dict_to_message(fields: dict,
@@ -116,21 +92,17 @@ def dict_to_message(fields: dict,
                     session_alias: str = '',
                     message_type: str = '') -> Message:
     """Converts a dict to th2-message with 'metadata' and 'parent_event_id'.
-
     Args:
         fields: Message fields as a dict.
         parent_event_id: Parent event id.
         session_alias: Session alias (is used when creating message metadata).
         message_type: Message type (is used when creating message metadata).
-
     Returns:
         th2-message with 'metadata' and 'parent_event_id'. All 'fields' nested entities will be converted.
-
         Conversion rules:
             str, int, float, Value - Value.simple_value
             list, ListValue - Value.list_value
             dict, Message - Value.message_value.
-
     Raises:
         TypeError: Occurs when 'message.fields' contains a field of the unsupported type.
     """
@@ -146,12 +118,10 @@ def dict_to_message(fields: dict,
 
 def _message_to_table_convert_value(message_value: Union[str, List, Dict],
                                     columns_names: List[str]) -> Optional[Union[str, Table]]:
-    value_type = type(message_value).__name__
-
-    if value_type == TypeName.STR:
+    if isinstance(message_value, str):
         return message_value  # type: ignore
 
-    elif value_type == TypeName.LIST:
+    elif isinstance(message_value, list):
         table = Table(columns_names)
 
         for index, list_item in enumerate(message_value):
@@ -163,7 +133,7 @@ def _message_to_table_convert_value(message_value: Union[str, List, Dict],
 
         return table
 
-    elif value_type == TypeName.DICT:
+    elif isinstance(message_value, dict):
         table = Table(columns_names)
 
         for field_name, field_value in message_value.items():  # type: ignore
@@ -176,31 +146,27 @@ def _message_to_table_convert_value(message_value: Union[str, List, Dict],
         return table
 
     else:
-        raise TypeError('Expected object type of str, int, float, list or dict, got %s' % type(message_value))
+        raise TypeError(f'Expected object type of str, int, float, list or dict, got {type(message_value)}')
 
 
 def message_to_table(message: Union[Dict, Message]) -> TreeTable:
     """Converts th2-message or dict to a TreeTable.
-
     Table can have only two columns. Nested tables are allowed. You will lose 'parent_event_id' and 'metadata'
     of the message.
-
     Args:
         message: th2-message.
-
     Returns:
         Tree table with two columns - one contains the name of the field and the other contains the value of this field.
-
     Raises:
         TypeError: Occurs when 'message.fields' contains a field not of the 'Value' type.
     """
 
     if isinstance(message, Message):
-        message = message_to_dict(message)
+        message = message_to_dict(message)['fields']  # type: ignore
 
     table = TreeTable(columns_names=['Field Value'])
 
-    for field_name in message:
+    for field_name in message:  # type: ignore
         table_entity = _message_to_table_convert_value(message[field_name], table.columns_names)  # type: ignore
         if isinstance(table_entity, Table):
             table.add_table(field_name, table_entity)
@@ -208,3 +174,17 @@ def message_to_table(message: Union[Dict, Message]) -> TreeTable:
             table.add_row(field_name, table_entity)
 
     return table
+
+
+def json_to_message(json_path: Union[str, Path]) -> Message:
+    """Read json file and convert its content to th2-message.
+    Args:
+        json_path: Path to json file.
+    Returns:
+        th2-message
+    """
+
+    with open(json_path, 'r') as read_content:
+        json_dict = json.load(read_content)
+
+    return ParseDict(json_dict, Message())
