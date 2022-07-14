@@ -37,16 +37,6 @@ def component_encoder() -> ComponentEncoder:
     return ComponentEncoder()
 
 
-def create_event_id() -> EventID:
-    """Creates event id as EventID class instance.
-
-    Returns:
-        EventID class instance with 'id' attribute.
-    """
-
-    return EventID(id=str(uuid.uuid1()))
-
-
 def create_timestamp() -> Timestamp:
     timestamp = Timestamp()
     timestamp.GetCurrentTime()
@@ -54,9 +44,19 @@ def create_timestamp() -> Timestamp:
     return timestamp
 
 
+def create_event_id() -> EventID:
+    """Creates event id as EventID class instance.
+
+    Returns:
+        EventID class instance with 'id' attribute.
+    """
+
+    return EventID(id=str(uuid.uuid1()),
+                   start_timestamp=create_timestamp())
+
+
 def create_event(event_id: Optional[EventID] = None,
                  parent_id: Optional[EventID] = None,
-                 start_timestamp: Optional[Timestamp] = None,
                  end_timestamp: Optional[Timestamp] = None,
                  status: Union[str, int] = EventStatus.SUCCESS,
                  name: str = 'Event',
@@ -68,7 +68,6 @@ def create_event(event_id: Optional[EventID] = None,
     Args:
         event_id: ID of the event.
         parent_id: Parent ID of the event.
-        start_timestamp: Start timestamp.
         end_timestamp: End timestamp.
         status: Event status ('SUCCESS' or 'FAILED').
         name: Event name.
@@ -83,7 +82,6 @@ def create_event(event_id: Optional[EventID] = None,
     return Event(
         id=event_id or create_event_id(),
         parent_id=parent_id,
-        start_timestamp=start_timestamp or create_timestamp(),
         end_timestamp=end_timestamp or create_timestamp(),
         status=status,  # type: ignore
         name=name,
