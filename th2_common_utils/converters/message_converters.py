@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from google.protobuf.json_format import MessageToDict, ParseDict
+from google.protobuf.json_format import ParseDict
 from th2_common_utils.util.tree_table import Table, TreeTable
 from th2_grpc_common.common_pb2 import ConnectionID, EventID, ListValue, Message, \
     MessageID, MessageMetadata, Value
@@ -57,10 +57,21 @@ def message_to_dict(message: Message) -> Dict[str, Optional[DictMessageType]]:
     Raises:
         TypeError: Occurs when 'message.fields' contains a field not of the 'Value' type.
     """
+    message_metadata = message.metadata
 
     return {
         'parent_event_id': message.parent_event_id.id,
-        'metadata': MessageToDict(message.metadata),
+        'metadata': {
+            'session_alias': message_metadata.id.connection_id.session_alias,
+            'session_group': message_metadata.id.connection_id.session_group,
+            'direction': message_metadata.id.direction,
+            'sequence': message_metadata.id.sequence,
+            'subsequence': message_metadata.id.subsequence,
+            'timestamp': message_metadata.timestamp if message_metadata.HasField('timestamp') else None,
+            'message_type': message_metadata.message_type,
+            'properties': message_metadata.properties,
+            'protocol': message_metadata.protocol
+        },
         'fields': {
             field: _message_to_dict_convert_value(field_value)
             for field, field_value in message.fields.items()
