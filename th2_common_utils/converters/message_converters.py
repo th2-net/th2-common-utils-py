@@ -18,8 +18,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.json_format import ParseDict
 from th2_common_utils.util.tree_table import Table, TreeTable
-from th2_grpc_common.common_pb2 import ConnectionID, EventID, ListValue, Message, \
-    MessageID, MessageMetadata, Value
+from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
+    MessageMetadata, Value
 
 DictMessageType = Union[str, List, Dict]
 
@@ -64,7 +64,7 @@ def message_to_dict(message: Message) -> Dict[str, Optional[DictMessageType]]:
         'metadata': {
             'session_alias': message_metadata.id.connection_id.session_alias,
             'session_group': message_metadata.id.connection_id.session_group,
-            'direction': message_metadata.id.direction,
+            'direction': Direction.Name(message_metadata.id.direction),
             'sequence': message_metadata.id.sequence,
             'subsequence': message_metadata.id.subsequence,
             'timestamp': message_metadata.timestamp if message_metadata.HasField('timestamp') else None,
