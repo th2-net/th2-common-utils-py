@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
+from th2_grpc_common.common_pb2 import ConnectionID, EventID, ListValue, Message, MessageID, \
     MessageMetadata, Value
 
 parent_event_id = EventID()
@@ -67,7 +67,7 @@ new_order_single_dict = {
     'metadata': {
         'session_alias': 'kNglFzrW',
         'session_group': '',
-        'direction': Direction.FIRST,
+        'direction': 'FIRST',
         'sequence': 0,
         'subsequence': [],
         'timestamp': None,
