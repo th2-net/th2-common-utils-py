@@ -66,10 +66,10 @@ def message_to_dict(message: Message) -> Dict[str, Optional[DictMessageType]]:
             'session_group': message_metadata.id.connection_id.session_group,
             'direction': Direction.Name(message_metadata.id.direction),
             'sequence': message_metadata.id.sequence,
-            'subsequence': message_metadata.id.subsequence,
-            'timestamp': message_metadata.timestamp if message_metadata.HasField('timestamp') else None,
+            'subsequence': list(message_metadata.id.subsequence),
+            'timestamp': message_metadata.timestamp.ToDatetime() if message_metadata.HasField('timestamp') else None,
             'message_type': message_metadata.message_type,
-            'properties': message_metadata.properties,
+            'properties': {k: v for k, v in message_metadata.properties.items()},
             'protocol': message_metadata.protocol
         },
         'fields': {

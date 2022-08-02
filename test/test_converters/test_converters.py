@@ -15,7 +15,7 @@
 import json
 from test.test_converters.resources import json_message, table
 from test.test_converters.resources.new_order_single import new_order_single_dict, new_order_single_message, \
-    parent_event_id, session_alias
+    new_order_single_message_from_dict, parent_event_id, session_alias
 from test.test_converters.resources.root_message_filter import message_filter_dict, metadata_filter_dict, \
     root_message_filter
 from typing import Any
@@ -34,7 +34,7 @@ def test_dict_to_message() -> None:
     assert dict_to_message(fields=new_order_single_dict['fields'],
                            parent_event_id=parent_event_id,
                            session_alias=session_alias,
-                           message_type='NewOrderSingle') == new_order_single_message
+                           message_type='NewOrderSingle') == new_order_single_message_from_dict
 
 
 def test_dict_to_root_message_filter() -> None:
