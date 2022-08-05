@@ -69,7 +69,7 @@ def message_to_dict(message: Message) -> Dict[str, Optional[DictMessageType]]:
             'subsequence': list(message_metadata.id.subsequence),
             'timestamp': message_metadata.timestamp.ToDatetime() if message_metadata.HasField('timestamp') else None,
             'message_type': message_metadata.message_type,
-            'properties': {k: v for k, v in message_metadata.properties.items()},
+            'properties': dict(**message_metadata.properties),
             'protocol': message_metadata.protocol
         },
         'fields': {
