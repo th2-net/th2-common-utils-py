@@ -8,9 +8,13 @@ pip install th2-common-utils
 
 ## Release notes
 
+### 1.4.3
+
+* Fixed memory leak.
+
 ### 1.4.2
 
-* Fix conversion of `Direction` field of `message_metadata`.
+* Fixed conversion of `Direction` field of `message_metadata`.
 
 ### 1.4.1
 
