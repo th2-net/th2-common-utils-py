@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from th2_grpc_common.common_pb2 import ConnectionID, EventID, ListValue, Message, MessageID, \
+from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
     MessageMetadata, Value
 
 parent_event_id = EventID()
@@ -37,8 +37,25 @@ new_order_single_message = Message(
     parent_event_id=parent_event_id,
     metadata=MessageMetadata(message_type='NewOrderSingle',
                              id=MessageID(
-                                 connection_id=ConnectionID(session_alias=session_alias))
-                             ),
+                                 connection_id=ConnectionID(session_alias=session_alias),
+                                 direction=Direction.FIRST,
+                                 sequence=12,
+                                 subsequence=[1, 2]),
+                             properties={'prop1': '1'}),
+    fields={
+        'OrdType': Value(simple_value='1'),
+        'AccountType': Value(simple_value='2'),
+        'OrderCapacity': Value(simple_value='A'),
+        'Price': Value(simple_value='100'),
+        'TradingParty': trading_party_message
+    }
+)
+
+new_order_single_message_from_dict = Message(
+    parent_event_id=parent_event_id,
+    metadata=MessageMetadata(message_type='NewOrderSingle',
+                             id=MessageID(
+                                 connection_id=ConnectionID(session_alias=session_alias))),
     fields={
         'OrdType': Value(simple_value='1'),
         'AccountType': Value(simple_value='2'),
@@ -68,11 +85,11 @@ new_order_single_dict = {
         'session_alias': 'kNglFzrW',
         'session_group': '',
         'direction': 'FIRST',
-        'sequence': 0,
-        'subsequence': [],
+        'sequence': 12,
+        'subsequence': [1, 2],
         'timestamp': None,
         'message_type': 'NewOrderSingle',
-        'properties': {},
+        'properties': {'prop1': '1'},
         'protocol': ''
     },
     'parent_event_id': '',
