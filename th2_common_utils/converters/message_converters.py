@@ -148,7 +148,7 @@ def _message_to_table_convert_value(message_value: Union[str, List, Dict],
         return table
 
     elif isinstance(message_value, dict):
-        table = Table(columns_names)
+        table = Table(columns_names=columns_names, sort=sort)
 
         for field_name, field_value in message_value.items():  # type: ignore
             table_inner_item = _message_to_table_convert_value(message_value=field_value,
