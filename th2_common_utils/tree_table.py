@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from collections import OrderedDict
 from itertools import zip_longest
 from typing import List, Optional, Union
 
@@ -21,8 +22,11 @@ from th2_common_utils.event_utils import create_event_body
 
 class AbstractTable:
 
-    def __init__(self, columns_names: List[str]):
-        self.rows = SortedDict()
+    def __init__(self, columns_names: List[str], sort: bool):
+        if sort:
+            self.rows = SortedDict()
+        else:
+            self.rows = OrderedDict()
         self.columns_names = columns_names
 
     def add_row(self, *values: Optional[Union[str, int, float]]) -> None:
@@ -40,15 +44,15 @@ class AbstractTable:
 
 class Table(AbstractTable):
 
-    def __init__(self, columns_names: List[str]):
-        super().__init__(columns_names)
+    def __init__(self, columns_names: List[str], sort: bool = False):
+        super().__init__(columns_names, sort)
         self.type = 'collection'
 
 
 class TreeTable(AbstractTable):
 
-    def __init__(self, columns_names: List[str]) -> None:
-        super().__init__(columns_names)
+    def __init__(self, columns_names: List[str], sort: bool = False) -> None:
+        super().__init__(columns_names, sort)
         self.type = 'treeTable'
 
     def __bytes__(self) -> bytes:

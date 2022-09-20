@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.json_format import ParseDict
-from th2_common_utils.util.tree_table import Table, TreeTable
+from th2_common_utils.tree_table import Table, TreeTable
 from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
     MessageMetadata, Value
 
@@ -128,15 +128,18 @@ def dict_to_message(fields: dict,
 
 
 def _message_to_table_convert_value(message_value: Union[str, List, Dict],
-                                    columns_names: List[str]) -> Optional[Union[str, Table]]:
+                                    columns_names: List[str],
+                                    sort: bool) -> Optional[Union[str, Table]]:
     if isinstance(message_value, str):
         return message_value  # type: ignore
 
     elif isinstance(message_value, list):
-        table = Table(columns_names)
+        table = Table(columns_names=columns_names, sort=sort)
 
         for index, list_item in enumerate(message_value):
-            table_inner_item = _message_to_table_convert_value(list_item, columns_names)
+            table_inner_item = _message_to_table_convert_value(message_value=list_item,
+                                                               columns_names=columns_names,
+                                                               sort=sort)
             if isinstance(table_inner_item, Table):
                 table.add_table(index, table_inner_item)
             else:
@@ -148,7 +151,9 @@ def _message_to_table_convert_value(message_value: Union[str, List, Dict],
         table = Table(columns_names)
 
         for field_name, field_value in message_value.items():  # type: ignore
-            table_inner_item = _message_to_table_convert_value(field_value, columns_names)
+            table_inner_item = _message_to_table_convert_value(message_value=field_value,
+                                                               columns_names=columns_names,
+                                                               sort=sort)
             if isinstance(table_inner_item, Table):
                 table.add_table(field_name, table_inner_item)
             else:
@@ -160,12 +165,14 @@ def _message_to_table_convert_value(message_value: Union[str, List, Dict],
         raise TypeError(f'Expected object type of str, int, float, list or dict, got {type(message_value)}')
 
 
-def message_to_table(message: Union[Dict, Message]) -> TreeTable:
+def message_to_table(message: Union[Dict, Message], sort: bool = False) -> TreeTable:
     """Converts th2-message or dict to a TreeTable.
     Table can have only two columns. Nested tables are allowed. You will lose 'parent_event_id' and 'metadata'
     of the message.
     Args:
         message: th2-message.
+        sort: If True, the rows will be sorted by the first field, otherwise, rows will be set in the order
+            that you add it.
     Returns:
         Tree table with two columns - one contains the name of the field and the other contains the value of this field.
     Raises:
@@ -175,10 +182,12 @@ def message_to_table(message: Union[Dict, Message]) -> TreeTable:
     if isinstance(message, Message):
         message = message_to_dict(message)['fields']  # type: ignore
 
-    table = TreeTable(columns_names=['Field Value'])
+    table = TreeTable(columns_names=['Field Value'], sort=sort)
 
     for field_name in message:  # type: ignore
-        table_entity = _message_to_table_convert_value(message[field_name], table.columns_names)  # type: ignore
+        table_entity = _message_to_table_convert_value(message_value=message[field_name],  # type: ignore
+                                                       columns_names=table.columns_names,
+                                                       sort=sort)
         if isinstance(table_entity, Table):
             table.add_table(field_name, table_entity)
         else:
