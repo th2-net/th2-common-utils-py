@@ -12,7 +12,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from collections import OrderedDict
 from itertools import zip_longest
 from typing import List, Optional, Union
 
@@ -26,7 +25,7 @@ class AbstractTable:
         if sort:
             self.rows = SortedDict()
         else:
-            self.rows = OrderedDict()
+            self.rows = {}
         self.columns_names = columns_names
 
     def add_row(self, *values: Optional[Union[str, int, float]]) -> None:
