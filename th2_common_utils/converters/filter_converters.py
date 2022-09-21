@@ -25,7 +25,7 @@ class FieldFilter:
 
     def __init__(self,
                  value: Optional[Any] = None,
-                 operation: FilterOperation.ValueType = FilterOperation.EQUAL,
+                 operation: Any = FilterOperation.EQUAL,
                  key: bool = False):
         self.value = value
         self.operation = operation
