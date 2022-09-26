@@ -13,7 +13,6 @@
 #   limitations under the License.
 
 from th2_common_utils.converters.filter_converters import FieldFilter
-from th2_grpc_check1.check1_pb2 import PreFilter
 from th2_grpc_common.common_pb2 import FilterOperation, ListValueFilter, MessageFilter, MetadataFilter, \
     RootMessageFilter, SimpleList, ValueFilter
 
@@ -57,8 +56,7 @@ root_message_filter = RootMessageFilter(
 )
 
 
-pre_filter = PreFilter(fields=root_message_filter.message_filter.fields,
-                       metadata_filter=root_message_filter.metadata_filter)
+value_filters_dict = root_message_filter.message_filter.fields
 
 
 message_filter_dict = {

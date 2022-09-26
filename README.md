@@ -11,7 +11,7 @@ pip install th2-common-utils
 ### 1.4.4
 
 * Added the ability to create sorted `TreeTable` (ordered by default).
-* Added `dict_to_pre_filter` function.
+* Added `dict_values_to_value_filters` and `dict_to_metadata_filter` functions (can be used to create `PreFilter` object from *th2-grpc-check1*).
 
 ### 1.4.3
 

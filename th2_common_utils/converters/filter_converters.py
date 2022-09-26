@@ -15,7 +15,6 @@
 from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.duration_pb2 import Duration
-from th2_grpc_check1.check1_pb2 import PreFilter
 from th2_grpc_common.common_pb2 import FilterOperation, ListValueFilter, MessageFilter, MetadataFilter, \
     RootComparisonSettings, RootMessageFilter, SimpleList, ValueFilter
 
@@ -71,7 +70,7 @@ def dict_to_root_message_filter(message_type: str = '',
     if isinstance(metadata_filter, MetadataFilter):
         root_message_filter.metadata_filter.CopyFrom(metadata_filter)
     elif isinstance(metadata_filter, Dict):
-        root_message_filter.metadata_filter.CopyFrom(to_metadata_filter(metadata_filter))
+        root_message_filter.metadata_filter.CopyFrom(dict_to_metadata_filter(metadata_filter))
 
     root_comparison_settings: Dict[str, Any] = {}
 
@@ -90,19 +89,8 @@ def dict_to_root_message_filter(message_type: str = '',
     return root_message_filter
 
 
-def dict_to_pre_filter(fields: Optional[Dict[str, Any]] = None,
-                       metadata_filter: Optional[Union[FieldsDict, MetadataFilter]] = None) -> PreFilter:
-    if fields is not None:
-        pre_filter = PreFilter(fields={k: to_value_filter(v) for k, v in fields.items()})
-    else:
-        pre_filter = PreFilter()
-
-    if isinstance(metadata_filter, MetadataFilter):
-        pre_filter.metadata_filter.CopyFrom(metadata_filter)
-    elif isinstance(metadata_filter, dict):
-        pre_filter.metadata_filter.CopyFrom(to_metadata_filter(metadata_filter))
-
-    return pre_filter
+def dict_values_to_value_filters(fields: Dict[str, Any]) -> Dict[str, ValueFilter]:
+    return {k: to_value_filter(v) for k, v in fields.items()}
 
 
 # =========================
@@ -151,10 +139,10 @@ def dict_to_value_filter(dict_value: dict) -> ValueFilter:
 # MetadataFilter
 # =========================
 
-def to_metadata_filter(dict_obj: Dict[str, Any]) -> MetadataFilter:
+def dict_to_metadata_filter(fields: Dict[str, Any]) -> MetadataFilter:
     return MetadataFilter(property_filters={
         filter_name: to_simple_filter(filter_value)
-        for filter_name, filter_value in dict_obj.items()
+        for filter_name, filter_value in fields.items()
     })
 
 
