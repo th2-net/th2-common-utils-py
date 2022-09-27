@@ -30,8 +30,7 @@ class AbstractTable:
 
     def add_row(self, *values: Optional[Union[str, int, float]]) -> None:
         if values:
-            row_name = values[0]
-            row_values = values[1:]
+            row_name, *row_values = values
             self.rows[row_name] = {
                 'type': 'row',
                 'columns': dict(zip_longest(self.columns_names, row_values, fillvalue=''))

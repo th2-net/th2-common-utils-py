@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "th2-common-utils"
-version = "1.4.4"
+version = "1.5.0"
 description = "Python library with useful functions for developers and QA needs"
 authors = ["TH2-devs <th2-devs@exactprosystems.com>"]
 readme = "README.md"
@@ -18,6 +18,7 @@ packages = [
 python = "^3.7"
 th2-grpc-common = "3.*"
 sortedcollections = "2.*"
+protobuf = "3.19.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^3.4"
