@@ -14,14 +14,15 @@
 
 import json
 from test.test_converters.resources import json_message, table
+from test.test_converters.resources.filters import message_filter_dict, metadata_filter_dict, \
+    root_message_filter, value_filters_dict
 from test.test_converters.resources.new_order_single import new_order_single_dict, new_order_single_message, \
     new_order_single_message_from_dict, parent_event_id, session_alias
-from test.test_converters.resources.root_message_filter import message_filter_dict, metadata_filter_dict, \
-    root_message_filter
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from th2_common_utils.converters.filter_converters import dict_to_root_message_filter
+from th2_common_utils.converters.filter_converters import dict_to_root_message_filter, \
+    dict_values_to_value_filters
 from th2_common_utils.converters.message_converters import dict_to_message, json_to_message, message_to_dict, \
     message_to_table
 
@@ -43,8 +44,12 @@ def test_dict_to_root_message_filter() -> None:
                                        metadata_filter=metadata_filter_dict) == root_message_filter
 
 
+def test_dict_values_to_value_filters() -> None:
+    assert dict_values_to_value_filters(fields=message_filter_dict) == value_filters_dict
+
+
 def test_message_to_table() -> None:
-    assert bytes(table.tree_table) == bytes(message_to_table(table.message))
+    assert bytes(table.tree_table) == bytes(message_to_table(table.message, sort=True))
 
 
 @patch('json.load')

@@ -21,14 +21,16 @@ from th2_common_utils.event_utils import create_event_body
 
 class AbstractTable:
 
-    def __init__(self, columns_names: List[str]):
-        self.rows = SortedDict()
+    def __init__(self, columns_names: List[str], sort: bool):
+        if sort:
+            self.rows = SortedDict()
+        else:
+            self.rows = {}
         self.columns_names = columns_names
 
     def add_row(self, *values: Optional[Union[str, int, float]]) -> None:
         if values:
-            row_name = values[0]
-            row_values = values[1:]
+            row_name, *row_values = values
             self.rows[row_name] = {
                 'type': 'row',
                 'columns': dict(zip_longest(self.columns_names, row_values, fillvalue=''))
@@ -40,15 +42,15 @@ class AbstractTable:
 
 class Table(AbstractTable):
 
-    def __init__(self, columns_names: List[str]):
-        super().__init__(columns_names)
+    def __init__(self, columns_names: List[str], sort: bool = False):
+        super().__init__(columns_names, sort)
         self.type = 'collection'
 
 
 class TreeTable(AbstractTable):
 
-    def __init__(self, columns_names: List[str]) -> None:
-        super().__init__(columns_names)
+    def __init__(self, columns_names: List[str], sort: bool = False) -> None:
+        super().__init__(columns_names, sort)
         self.type = 'treeTable'
 
     def __bytes__(self) -> bytes:

@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from th2_common_utils.util.tree_table import Table, TreeTable
+from th2_common_utils.tree_table import Table, TreeTable
 from th2_grpc_common.common_pb2 import ListValue, Message, Value
 
 
@@ -32,7 +32,7 @@ message = Message(fields={
 })
 
 
-tree_table = TreeTable(columns_names=['Field Value'])
+tree_table = TreeTable(columns_names=['Field Value'], sort=True)
 tree_table.add_row('SimpleField1', '1')
 tree_table.add_row('SimpleField2', '2')
 
