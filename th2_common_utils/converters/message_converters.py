@@ -12,11 +12,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import datetime
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.json_format import ParseDict
+from google.protobuf.timestamp_pb2 import Timestamp
 from th2_common_utils.tree_table import Table, TreeTable
 from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
     MessageMetadata, Value
@@ -100,14 +102,28 @@ def _dict_to_message_convert_value(entity: Any) -> Value:
 
 def dict_to_message(fields: dict,
                     parent_event_id: Optional[EventID] = None,
+                    message_type: str = '',
                     session_alias: str = '',
-                    message_type: str = '') -> Message:
+                    session_group: str = '',
+                    direction: str = 'FIRST',
+                    sequence: int = 0,
+                    subsequence: Optional[List[int]] = None,
+                    timestamp: Optional[datetime.datetime] = None,
+                    properties: Optional[Dict[str, str]] = None,
+                    protocol: str = '') -> Message:
     """Converts a dict to th2-message with 'metadata' and 'parent_event_id'.
     Args:
         fields: Message fields as a dict.
         parent_event_id: Parent event id.
-        session_alias: Session alias (is used when creating message metadata).
-        message_type: Message type (is used when creating message metadata).
+        session_alias: Session alias.
+        message_type: Message type.
+        session_group: Session group.
+        direction: Direction.
+        sequence: Sequence.
+        subsequence: Subsequence.
+        timestamp: Timestamp as datetime.datetime object.
+        properties: Properties.
+        protocol: Protocol.
     Returns:
         th2-message with 'metadata' and 'parent_event_id'. All 'fields' nested entities will be converted.
         Conversion rules:
@@ -121,9 +137,21 @@ def dict_to_message(fields: dict,
     if parent_event_id is None:
         parent_event_id = EventID()
 
+    metadata = MessageMetadata(id=MessageID(connection_id=ConnectionID(session_alias=session_alias,
+                                                                       session_group=session_group),
+                                            direction=getattr(Direction, direction),
+                                            sequence=sequence,
+                                            subsequence=subsequence if subsequence is not None else []),
+                               message_type=message_type,
+                               properties=properties,
+                               protocol=protocol)
+    if timestamp is not None:
+        timestamp_pb = Timestamp()
+        timestamp_pb.FromDatetime(timestamp)
+        metadata.timestamp.CopyFrom(timestamp_pb)
+
     return Message(parent_event_id=parent_event_id,
-                   metadata=MessageMetadata(id=MessageID(connection_id=ConnectionID(session_alias=session_alias)),
-                                            message_type=message_type),
+                   metadata=metadata,
                    fields={field: _dict_to_message_convert_value(field_value) for field, field_value in fields.items()})
 
 
