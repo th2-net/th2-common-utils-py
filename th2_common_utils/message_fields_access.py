@@ -16,8 +16,10 @@ from pprint import pformat
 from typing import Any, Dict, List, Union
 
 from th2_common_utils.converters.message_converters import _dict_to_message_convert_value, message_to_dict
-from th2_common_utils.util.common import SimpleType
 from th2_grpc_common.common_pb2 import ListValue, Message, Value
+
+
+SimpleType = Union[str, int, float]
 
 
 # =========================

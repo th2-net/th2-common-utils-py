@@ -16,25 +16,33 @@ from typing import Any, List, Optional, Union
 import uuid
 
 from google.protobuf.timestamp_pb2 import Timestamp
-from th2_common_utils.util.common import ComponentEncoder
+import orjson
 from th2_grpc_common.common_pb2 import Event, EventID, EventStatus, MessageID
 
 
-def create_event_body(component: Any) -> bytes:
+def create_event_body(component: Any, sort: bool = False) -> bytes:
     """Creates event body (component) as bytes.
 
     Args:
         component: Event body to be converted into bytes.
+        sort: Set True if you need your object properties to be sorted.
 
     Returns:
         Event body as bytes.
     """
 
-    return component_encoder().encode(component).encode()
+    if sort:
+        return orjson.dumps(component,
+                            default=lambda o: o.__dict__,
+                            option=orjson.OPT_NON_STR_KEYS | orjson.OPT_SORT_KEYS)
+    else:
+        return orjson.dumps(component,
+                            default=lambda o: o.__dict__,
+                            option=orjson.OPT_NON_STR_KEYS)
 
 
-def component_encoder() -> ComponentEncoder:
-    return ComponentEncoder()
+common_id = str(uuid.uuid1())
+counter = 0
 
 
 def create_event_id() -> EventID:
@@ -43,8 +51,9 @@ def create_event_id() -> EventID:
     Returns:
         EventID class instance with 'id' attribute.
     """
-
-    return EventID(id=str(uuid.uuid1()))
+    global counter
+    counter += 1
+    return EventID(id=f'{common_id}_{counter}')
 
 
 def create_timestamp() -> Timestamp:

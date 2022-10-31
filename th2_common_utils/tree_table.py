@@ -21,12 +21,15 @@ from th2_common_utils.event_utils import create_event_body
 
 class AbstractTable:
 
+    __slots__ = ('rows', 'columns_names', 'sort', 'type')
+
     def __init__(self, columns_names: List[str], sort: bool):
         if sort:
             self.rows = SortedDict()
         else:
             self.rows = {}
         self.columns_names = columns_names
+        self.sort = sort
 
     def add_row(self, *values: Optional[Union[str, int, float]]) -> None:
         if values:
@@ -54,4 +57,4 @@ class TreeTable(AbstractTable):
         self.type = 'treeTable'
 
     def __bytes__(self) -> bytes:
-        return create_event_body(self)
+        return create_event_body(self, sort=self.sort)
