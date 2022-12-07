@@ -69,7 +69,8 @@ def message_to_dict(message: Message) -> Dict[str, Optional[DictMessageType]]:
             'direction': Direction.Name(message_metadata.id.direction),
             'sequence': message_metadata.id.sequence,
             'subsequence': list(message_metadata.id.subsequence),
-            'timestamp': message_metadata.timestamp.ToDatetime() if message_metadata.HasField('timestamp') else None,
+            # TODO - grpc4 doesn't have timestamp more
+            # 'timestamp': message_metadata.timestamp.ToDatetime() if message_metadata.HasField('timestamp') else None,
             'message_type': message_metadata.message_type,
             'properties': dict(**message_metadata.properties),
             'protocol': message_metadata.protocol

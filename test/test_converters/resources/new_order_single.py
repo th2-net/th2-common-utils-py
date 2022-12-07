@@ -87,7 +87,7 @@ new_order_single_dict = {
         'direction': 'FIRST',
         'sequence': 12,
         'subsequence': [1, 2],
-        'timestamp': None,
+        # 'timestamp': None,  # TODO - grpc4 doesn't have timestamp more
         'message_type': 'NewOrderSingle',
         'properties': {'prop1': '1'},
         'protocol': ''
