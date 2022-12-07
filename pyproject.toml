@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "th2-common-utils"
-version = "1.6.0"
+version = "2.0.0"
 description = "Python library with useful functions for developers and QA needs"
 authors = ["TH2-devs <th2-devs@exactprosystems.com>"]
 readme = "README.md"
@@ -16,7 +16,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-th2-grpc-common = "^3.12"
+th2-grpc-common = "4.0.0.dev3574839741"
 sortedcollections = "2.*"
 orjson = "^3.8.1"
 

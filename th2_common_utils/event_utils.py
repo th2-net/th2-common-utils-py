@@ -17,7 +17,7 @@ import uuid
 
 from google.protobuf.timestamp_pb2 import Timestamp
 import orjson
-from th2_grpc_common.common_pb2 import Event, EventID, EventStatus, MessageID
+from th2_grpc_common.common_pb2 import Event, EventID, EventStatus, MessageID, EventBatch
 
 
 def create_event_body(component: Any, sort: bool = False) -> bytes:
@@ -92,7 +92,6 @@ def create_event(event_id: Optional[EventID] = None,
     return Event(
         id=event_id or create_event_id(),
         parent_id=parent_id,
-        start_timestamp=start_timestamp or create_timestamp(),
         end_timestamp=end_timestamp or create_timestamp(),
         status=status,  # type: ignore
         name=name,
