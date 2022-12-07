@@ -45,15 +45,26 @@ common_id = str(uuid.uuid1())
 counter = 0
 
 
-def create_event_id() -> EventID:
+def create_event_id(book_name: str,
+                    scope: str,
+                    start_timestamp: Optional[Timestamp] = None) -> EventID:
     """Creates event id as EventID class instance.
+
+    Args:
+        book_name: Name of the book.
+        scope: Scope name. Scope is a thing like a stream but for events.
+        start_timestamp: Start timestamp.
 
     Returns:
         EventID class instance with 'id' attribute.
     """
     global counter
     counter += 1
-    return EventID(id=f'{common_id}_{counter}')
+    return EventID(id=f'{common_id}_{counter}',
+                   book_name=book_name,
+                   scope=scope,
+                   start_timestamp=start_timestamp or create_timestamp()
+                   )
 
 
 def create_timestamp() -> Timestamp:
@@ -65,7 +76,6 @@ def create_timestamp() -> Timestamp:
 
 def create_event(event_id: Optional[EventID] = None,
                  parent_id: Optional[EventID] = None,
-                 start_timestamp: Optional[Timestamp] = None,
                  end_timestamp: Optional[Timestamp] = None,
                  status: Union[str, int] = EventStatus.SUCCESS,
                  name: str = 'Event',
@@ -77,7 +87,6 @@ def create_event(event_id: Optional[EventID] = None,
     Args:
         event_id: ID of the event.
         parent_id: Parent ID of the event.
-        start_timestamp: Start timestamp.
         end_timestamp: End timestamp.
         status: Event status ('SUCCESS' or 'FAILED').
         name: Event name.
