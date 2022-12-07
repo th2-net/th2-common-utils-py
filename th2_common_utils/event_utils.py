@@ -98,3 +98,14 @@ def create_event(event_id: Optional[EventID] = None,
         type=event_type,
         body=body,
         attached_message_ids=attached_message_ids)
+
+
+def create_event_batch(parent_id: Optional[EventID] = None) -> EventBatch:
+    # TODO - add EventBatchMetadata
+
+    event_batch = EventBatch()
+
+    if parent_id:
+        event_batch.parent_event_id.CopyFrom(parent_id)
+
+    return event_batch
