@@ -101,10 +101,17 @@ def create_event(event_id: Optional[EventID] = None,
 
 
 def create_event_batch(parent_id: Optional[EventID] = None) -> EventBatch:
-    # TODO - add EventBatchMetadata
+    """Creates event batch.
+
+    Args:
+        parent_id: parent event ID
+
+    Returns:
+        EventBatch object.
+    """
 
     event_batch = EventBatch()
-
+    # TODO - add EventBatchMetadata  # noqa: T101
     if parent_id:
         event_batch.parent_event_id.CopyFrom(parent_id)
 
