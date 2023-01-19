@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from itertools import zip_longest
-from typing import List, Optional, Union, Any
+from typing import Any, List, Optional, Union
 
 import orjson
 from sortedcontainers import SortedDict
