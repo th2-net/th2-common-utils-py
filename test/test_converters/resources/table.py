@@ -12,8 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from th2_common_utils.event_components import Table, TreeTable
 from th2_grpc_common.common_pb2 import ListValue, Message, Value
+
+from th2_common_utils.event_components import Table, TreeTable
 
 
 listvalue_message = Value(message_value=Message(fields={

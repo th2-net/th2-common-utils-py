@@ -19,9 +19,11 @@ from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.json_format import ParseDict
 from google.protobuf.timestamp_pb2 import Timestamp
-from th2_common_utils.event_components import Table, TreeTable
 from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
     MessageMetadata, Value
+
+from th2_common_utils.event_components import Table, TreeTable
+
 
 DictMessageType = Union[str, List, Dict]
 
