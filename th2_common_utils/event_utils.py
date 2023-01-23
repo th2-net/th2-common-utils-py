@@ -77,5 +77,7 @@ def create_event(event_id: Optional[EventID] = None,
         status=status,  # type: ignore
         name=name,
         type=event_type,
-        body=bytes(body if isinstance(body, TreeTable) else MessageComponent(body)) if body is not None else b'',
+        body=bytes(body
+                   if isinstance(body, (MessageComponent, TreeTable))
+                   else MessageComponent(body)) if body is not None else b'',
         attached_message_ids=attached_message_ids)
