@@ -12,14 +12,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import datetime
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.json_format import ParseDict
-from th2_common_utils.tree_table import Table, TreeTable
+from google.protobuf.timestamp_pb2 import Timestamp
 from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
     MessageMetadata, Value
+
+from th2_common_utils.event_components import TableComponent, TreeTableComponent
+
 
 DictMessageType = Union[str, List, Dict]
 
@@ -100,14 +104,28 @@ def _dict_to_message_convert_value(entity: Any) -> Value:
 
 def dict_to_message(fields: dict,
                     parent_event_id: Optional[EventID] = None,
+                    message_type: str = '',
                     session_alias: str = '',
-                    message_type: str = '') -> Message:
+                    session_group: str = '',
+                    direction: str = 'FIRST',
+                    sequence: int = 0,
+                    subsequence: Optional[List[int]] = None,
+                    timestamp: Optional[datetime.datetime] = None,
+                    properties: Optional[Dict[str, str]] = None,
+                    protocol: str = '') -> Message:
     """Converts a dict to th2-message with 'metadata' and 'parent_event_id'.
     Args:
         fields: Message fields as a dict.
         parent_event_id: Parent event id.
-        session_alias: Session alias (is used when creating message metadata).
-        message_type: Message type (is used when creating message metadata).
+        session_alias: Session alias.
+        message_type: Message type.
+        session_group: Session group.
+        direction: Direction.
+        sequence: Sequence.
+        subsequence: Subsequence.
+        timestamp: Timestamp as datetime.datetime object.
+        properties: Properties.
+        protocol: Protocol.
     Returns:
         th2-message with 'metadata' and 'parent_event_id'. All 'fields' nested entities will be converted.
         Conversion rules:
@@ -121,26 +139,38 @@ def dict_to_message(fields: dict,
     if parent_event_id is None:
         parent_event_id = EventID()
 
+    metadata = MessageMetadata(id=MessageID(connection_id=ConnectionID(session_alias=session_alias,
+                                                                       session_group=session_group),
+                                            direction=getattr(Direction, direction),
+                                            sequence=sequence,
+                                            subsequence=subsequence if subsequence is not None else []),
+                               message_type=message_type,
+                               properties=properties,
+                               protocol=protocol)
+    if timestamp is not None:
+        timestamp_pb = Timestamp()
+        timestamp_pb.FromDatetime(timestamp)
+        metadata.timestamp.CopyFrom(timestamp_pb)
+
     return Message(parent_event_id=parent_event_id,
-                   metadata=MessageMetadata(id=MessageID(connection_id=ConnectionID(session_alias=session_alias)),
-                                            message_type=message_type),
+                   metadata=metadata,
                    fields={field: _dict_to_message_convert_value(field_value) for field, field_value in fields.items()})
 
 
 def _message_to_table_convert_value(message_value: Union[str, List, Dict],
                                     columns_names: List[str],
-                                    sort: bool) -> Optional[Union[str, Table]]:
+                                    sort: bool) -> Optional[Union[str, TableComponent]]:
     if isinstance(message_value, str):
         return message_value  # type: ignore
 
     elif isinstance(message_value, list):
-        table = Table(columns_names=columns_names, sort=sort)
+        table = TableComponent(columns_names=columns_names, sort=sort)
 
         for index, list_item in enumerate(message_value):
             table_inner_item = _message_to_table_convert_value(message_value=list_item,
                                                                columns_names=columns_names,
                                                                sort=sort)
-            if isinstance(table_inner_item, Table):
+            if isinstance(table_inner_item, TableComponent):
                 table.add_table(index, table_inner_item)
             else:
                 table.add_row(index, table_inner_item)
@@ -148,13 +178,13 @@ def _message_to_table_convert_value(message_value: Union[str, List, Dict],
         return table
 
     elif isinstance(message_value, dict):
-        table = Table(columns_names=columns_names, sort=sort)
+        table = TableComponent(columns_names=columns_names, sort=sort)
 
         for field_name, field_value in message_value.items():  # type: ignore
             table_inner_item = _message_to_table_convert_value(message_value=field_value,
                                                                columns_names=columns_names,
                                                                sort=sort)
-            if isinstance(table_inner_item, Table):
+            if isinstance(table_inner_item, TableComponent):
                 table.add_table(field_name, table_inner_item)
             else:
                 table.add_row(field_name, table_inner_item)
@@ -165,7 +195,7 @@ def _message_to_table_convert_value(message_value: Union[str, List, Dict],
         raise TypeError(f'Expected object type of str, int, float, list or dict, got {type(message_value)}')
 
 
-def message_to_table(message: Union[Dict, Message], sort: bool = False) -> TreeTable:
+def message_to_table(message: Union[Dict, Message], sort: bool = False) -> TreeTableComponent:
     """Converts th2-message or dict to a TreeTable.
     Table can have only two columns. Nested tables are allowed. You will lose 'parent_event_id' and 'metadata'
     of the message.
@@ -182,13 +212,13 @@ def message_to_table(message: Union[Dict, Message], sort: bool = False) -> TreeT
     if isinstance(message, Message):
         message = message_to_dict(message)['fields']  # type: ignore
 
-    table = TreeTable(columns_names=['Field Value'], sort=sort)
+    table = TreeTableComponent(columns_names=['Field Value'], sort=sort)
 
     for field_name in message:  # type: ignore
         table_entity = _message_to_table_convert_value(message_value=message[field_name],  # type: ignore
                                                        columns_names=table.columns_names,
                                                        sort=sort)
-        if isinstance(table_entity, Table):
+        if isinstance(table_entity, TableComponent):
             table.add_table(field_name, table_entity)
         else:
             table.add_row(field_name, table_entity)

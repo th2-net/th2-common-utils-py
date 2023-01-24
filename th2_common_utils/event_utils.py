@@ -16,25 +16,13 @@ from typing import Any, List, Optional, Union
 import uuid
 
 from google.protobuf.timestamp_pb2 import Timestamp
-from th2_common_utils.util.common import ComponentEncoder
 from th2_grpc_common.common_pb2 import Event, EventID, EventStatus, MessageID
 
-
-def create_event_body(component: Any) -> bytes:
-    """Creates event body (component) as bytes.
-
-    Args:
-        component: Event body to be converted into bytes.
-
-    Returns:
-        Event body as bytes.
-    """
-
-    return component_encoder().encode(component).encode()
+from th2_common_utils.event_components import MessageComponent, TreeTableComponent
 
 
-def component_encoder() -> ComponentEncoder:
-    return ComponentEncoder()
+common_id = str(uuid.uuid1())
+counter = 0
 
 
 def create_event_id() -> EventID:
@@ -43,8 +31,9 @@ def create_event_id() -> EventID:
     Returns:
         EventID class instance with 'id' attribute.
     """
-
-    return EventID(id=str(uuid.uuid1()))
+    global counter
+    counter += 1
+    return EventID(id=f'{common_id}_{counter}')
 
 
 def create_timestamp() -> Timestamp:
@@ -61,7 +50,7 @@ def create_event(event_id: Optional[EventID] = None,
                  status: Union[str, int] = EventStatus.SUCCESS,
                  name: str = 'Event',
                  event_type: str = '',
-                 body: bytes = b'',
+                 body: Any = None,
                  attached_message_ids: Optional[List[MessageID]] = None) -> Event:
     """Creates event as Event class instance.
 
@@ -88,5 +77,7 @@ def create_event(event_id: Optional[EventID] = None,
         status=status,  # type: ignore
         name=name,
         type=event_type,
-        body=body,
+        body=bytes(body
+                   if isinstance(body, (MessageComponent, TreeTableComponent))
+                   else MessageComponent(body)) if body is not None else b'',
         attached_message_ids=attached_message_ids)
