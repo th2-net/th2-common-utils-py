@@ -15,6 +15,6 @@
 from .converters.filter_converters import dict_to_metadata_filter, dict_to_root_message_filter, \
     dict_values_to_value_filters
 from .converters.message_converters import dict_to_message, json_to_message, message_to_dict, message_to_table
-from .event_components import MessageComponent, Table, TreeTable
+from .event_components import MessageComponent, TableComponent, TreeTableComponent
 from .event_utils import create_event, create_event_id, create_timestamp
 from .message_fields_access import *

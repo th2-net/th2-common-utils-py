@@ -18,7 +18,7 @@ import uuid
 from google.protobuf.timestamp_pb2 import Timestamp
 from th2_grpc_common.common_pb2 import Event, EventID, EventStatus, MessageID
 
-from th2_common_utils.event_components import MessageComponent, TreeTable
+from th2_common_utils.event_components import MessageComponent, TreeTableComponent
 
 
 common_id = str(uuid.uuid1())
@@ -78,6 +78,6 @@ def create_event(event_id: Optional[EventID] = None,
         name=name,
         type=event_type,
         body=bytes(body
-                   if isinstance(body, (MessageComponent, TreeTable))
+                   if isinstance(body, (MessageComponent, TreeTableComponent))
                    else MessageComponent(body)) if body is not None else b'',
         attached_message_ids=attached_message_ids)

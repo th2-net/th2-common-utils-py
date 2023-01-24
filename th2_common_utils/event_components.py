@@ -55,7 +55,7 @@ class AbstractTable:
                 'columns': dict(zip_longest(self.columns_names, values, fillvalue=''))
             }
 
-    def add_table(self, table_name: Union[str, int, float], table: 'Table') -> None:
+    def add_table(self, table_name: Union[str, int, float], table: 'TableComponent') -> None:
         """Adds inner table.
 
         Args:
@@ -70,13 +70,13 @@ class AbstractTable:
         return {'type': self.type, 'rows': self.rows}
 
 
-class Table(AbstractTable):
+class TableComponent(AbstractTable):
 
     def __init__(self, columns_names: List[str], sort: bool = False):
         super().__init__('collection', columns_names, sort)
 
 
-class TreeTable(AbstractTable):
+class TreeTableComponent(AbstractTable):
 
     def __init__(self, columns_names: List[str], sort: bool = False) -> None:
         super().__init__('treeTable', columns_names, sort)

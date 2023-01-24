@@ -14,7 +14,7 @@
 
 from th2_grpc_common.common_pb2 import ListValue, Message, Value
 
-from th2_common_utils.event_components import Table, TreeTable
+from th2_common_utils.event_components import TableComponent, TreeTableComponent
 
 
 listvalue_message = Value(message_value=Message(fields={
@@ -33,13 +33,13 @@ message = Message(fields={
 })
 
 
-tree_table = TreeTable(columns_names=['Field Value'], sort=True)
+tree_table = TreeTableComponent(columns_names=['Field Value'], sort=True)
 tree_table.add_row('SimpleField1', '1')
 tree_table.add_row('SimpleField2', '2')
 
-list_table = Table(columns_names=tree_table.columns_names)
-nested_list_table = Table(columns_names=tree_table.columns_names)
-nested_list_table_item0 = Table(columns_names=tree_table.columns_names)
+list_table = TableComponent(columns_names=tree_table.columns_names)
+nested_list_table = TableComponent(columns_names=tree_table.columns_names)
+nested_list_table_item0 = TableComponent(columns_names=tree_table.columns_names)
 nested_list_table_item0.add_row('List_SimpleField1', 'A')
 nested_list_table_item0.add_row('List_SimpleField2', 'B')
 

@@ -22,7 +22,7 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
     MessageMetadata, Value
 
-from th2_common_utils.event_components import Table, TreeTable
+from th2_common_utils.event_components import TableComponent, TreeTableComponent
 
 
 DictMessageType = Union[str, List, Dict]
@@ -159,18 +159,18 @@ def dict_to_message(fields: dict,
 
 def _message_to_table_convert_value(message_value: Union[str, List, Dict],
                                     columns_names: List[str],
-                                    sort: bool) -> Optional[Union[str, Table]]:
+                                    sort: bool) -> Optional[Union[str, TableComponent]]:
     if isinstance(message_value, str):
         return message_value  # type: ignore
 
     elif isinstance(message_value, list):
-        table = Table(columns_names=columns_names, sort=sort)
+        table = TableComponent(columns_names=columns_names, sort=sort)
 
         for index, list_item in enumerate(message_value):
             table_inner_item = _message_to_table_convert_value(message_value=list_item,
                                                                columns_names=columns_names,
                                                                sort=sort)
-            if isinstance(table_inner_item, Table):
+            if isinstance(table_inner_item, TableComponent):
                 table.add_table(index, table_inner_item)
             else:
                 table.add_row(index, table_inner_item)
@@ -178,13 +178,13 @@ def _message_to_table_convert_value(message_value: Union[str, List, Dict],
         return table
 
     elif isinstance(message_value, dict):
-        table = Table(columns_names=columns_names, sort=sort)
+        table = TableComponent(columns_names=columns_names, sort=sort)
 
         for field_name, field_value in message_value.items():  # type: ignore
             table_inner_item = _message_to_table_convert_value(message_value=field_value,
                                                                columns_names=columns_names,
                                                                sort=sort)
-            if isinstance(table_inner_item, Table):
+            if isinstance(table_inner_item, TableComponent):
                 table.add_table(field_name, table_inner_item)
             else:
                 table.add_row(field_name, table_inner_item)
@@ -195,7 +195,7 @@ def _message_to_table_convert_value(message_value: Union[str, List, Dict],
         raise TypeError(f'Expected object type of str, int, float, list or dict, got {type(message_value)}')
 
 
-def message_to_table(message: Union[Dict, Message], sort: bool = False) -> TreeTable:
+def message_to_table(message: Union[Dict, Message], sort: bool = False) -> TreeTableComponent:
     """Converts th2-message or dict to a TreeTable.
     Table can have only two columns. Nested tables are allowed. You will lose 'parent_event_id' and 'metadata'
     of the message.
@@ -212,13 +212,13 @@ def message_to_table(message: Union[Dict, Message], sort: bool = False) -> TreeT
     if isinstance(message, Message):
         message = message_to_dict(message)['fields']  # type: ignore
 
-    table = TreeTable(columns_names=['Field Value'], sort=sort)
+    table = TreeTableComponent(columns_names=['Field Value'], sort=sort)
 
     for field_name in message:  # type: ignore
         table_entity = _message_to_table_convert_value(message_value=message[field_name],  # type: ignore
                                                        columns_names=table.columns_names,
                                                        sort=sort)
-        if isinstance(table_entity, Table):
+        if isinstance(table_entity, TableComponent):
             table.add_table(field_name, table_entity)
         else:
             table.add_row(field_name, table_entity)
