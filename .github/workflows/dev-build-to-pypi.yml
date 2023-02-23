@@ -59,6 +59,7 @@ jobs:
       - name: Install Poetry
         uses: snok/install-poetry@v1
       - run: poetry export --without-hashes -f requirements.txt
+      - run: ls
       - name: Security vulnerabilities scan
         continue-on-error: true
         uses: aufdenpunkt/python-safety-check@master
