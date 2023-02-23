@@ -1,5 +1,9 @@
 # Release notes
 
+## 1.6.1
+
+* Added vulnerabilities scanning workflow
+
 ## 1.6.0
 
 * Updated `th2-grpc-common` minimal version to `3.12.0`.
