@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@master
       - name: Install Poetry
         uses: snok/install-poetry@v1
-      - run: poetry export --without-hashes -f requirements.txt
+      - run: poetry export -f requirements.txt --output requirements.txt
       - run: ls -a
       - run: ls -a ../
       - name: Security vulnerabilities scan
