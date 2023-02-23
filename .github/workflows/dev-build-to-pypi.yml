@@ -53,6 +53,8 @@ jobs:
     steps:
       - name: Check out master
         uses: actions/checkout@master
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
       - run: poetry export --without-hashes -f requirements.txt
       - name: Security vulnerabilities scan
         continue-on-error: true
