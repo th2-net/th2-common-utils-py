@@ -37,3 +37,16 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_PASSWORD }}
           repository_url: https://upload.pypi.org/legacy/
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out master
+        uses: actions/checkout@master
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+      - run: poetry export -f requirements.txt --output requirements.txt
+      - name: Security vulnerabilities scan
+        continue-on-error: true
+        uses: aufdenpunkt/python-safety-check@master
+        with:
+          scan_requirements_file_only: 'true'
