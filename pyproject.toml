@@ -21,7 +21,7 @@ sortedcollections = "2.*"
 orjson = "^3.8.1"
 
 [tool.poetry.dev-dependencies]
-pytest = "^3.4"
+pytest = "*"
 
 [build-system]
 requires = ["poetry_core>=1.0.0"]

@@ -16,29 +16,9 @@ from typing import Any, List, Optional, Union
 import uuid
 
 from google.protobuf.timestamp_pb2 import Timestamp
-import orjson
-from th2_grpc_common.common_pb2 import Event, EventID, EventStatus, MessageID, EventBatch
+from th2_grpc_common.common_pb2 import Event, EventID, EventStatus, MessageID
 
-
-def create_event_body(component: Any, sort: bool = False) -> bytes:
-    """Creates event body (component) as bytes.
-
-    Args:
-        component: Event body to be converted into bytes.
-        sort: Set True if you need your object properties to be sorted.
-
-    Returns:
-        Event body as bytes.
-    """
-
-    if sort:
-        return orjson.dumps(component,
-                            default=lambda o: o.__dict__,
-                            option=orjson.OPT_NON_STR_KEYS | orjson.OPT_SORT_KEYS)
-    else:
-        return orjson.dumps(component,
-                            default=lambda o: o.__dict__,
-                            option=orjson.OPT_NON_STR_KEYS)
+from th2_common_utils.event_components import MessageComponent, TreeTableComponent
 
 
 common_id = str(uuid.uuid1())
@@ -52,7 +32,7 @@ def create_event_id(book_name: str,
 
     Args:
         book_name: Name of the book.
-        scope: Scope name. Scope is a thing like a stream but for events.
+        scope: Scope (event stream) name.
         start_timestamp: Start timestamp.
 
     Returns:
@@ -75,17 +55,23 @@ def create_timestamp() -> Timestamp:
 
 
 def create_event(event_id: Optional[EventID] = None,
+                 book_name: Optional[str] = '',
+                 scope: Optional[str] = '',
+                 start_timestamp: Optional[Timestamp] = None,
                  parent_id: Optional[EventID] = None,
                  end_timestamp: Optional[Timestamp] = None,
                  status: Union[str, int] = EventStatus.SUCCESS,
                  name: str = 'Event',
                  event_type: str = '',
-                 body: bytes = b'',
+                 body: Any = None,
                  attached_message_ids: Optional[List[MessageID]] = None) -> Event:
     """Creates event as Event class instance.
 
     Args:
         event_id: ID of the event.
+        book_name: Name of the book.
+        scope: Scope (event stream) name.
+        start_timestamp: Start timestamp.
         parent_id: Parent ID of the event.
         end_timestamp: End timestamp.
         status: Event status ('SUCCESS' or 'FAILED').
@@ -99,29 +85,13 @@ def create_event(event_id: Optional[EventID] = None,
     """
 
     return Event(
-        id=event_id or create_event_id(),
+        id=event_id or create_event_id(book_name, scope, start_timestamp),
         parent_id=parent_id,
         end_timestamp=end_timestamp or create_timestamp(),
         status=status,  # type: ignore
         name=name,
         type=event_type,
-        body=body,
+        body=bytes(body
+                   if isinstance(body, (MessageComponent, TreeTableComponent))
+                   else MessageComponent(body)) if body is not None else b'',
         attached_message_ids=attached_message_ids)
-
-
-def create_event_batch(parent_id: Optional[EventID] = None) -> EventBatch:
-    """Creates event batch.
-
-    Args:
-        parent_id: parent event ID
-
-    Returns:
-        EventBatch object.
-    """
-
-    event_batch = EventBatch()
-    # TODO - add EventBatchMetadata  # noqa: T101
-    if parent_id:
-        event_batch.parent_event_id.CopyFrom(parent_id)
-
-    return event_batch
