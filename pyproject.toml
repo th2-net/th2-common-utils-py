@@ -16,7 +16,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-th2-grpc-common = "4.0.0.dev3574839741"
+th2-grpc-common = "^4.2"
 sortedcollections = "2.*"
 orjson = "^3.8.1"
 
