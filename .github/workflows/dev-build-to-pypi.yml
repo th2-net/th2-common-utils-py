@@ -4,6 +4,7 @@ on:
   push:
     branches-ignore:
       - master
+      - version-*
 
 env:
   DEP_PATH: requirements.txt
