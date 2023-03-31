@@ -78,6 +78,6 @@ def create_event(event_id: Optional[EventID] = None,
         name=name,
         type=event_type,
         body=bytes(body
-                   if isinstance(body, (MessageComponent, TreeTableComponent))
+                   if isinstance(body, (MessageComponent, TreeTableComponent, bytes))
                    else MessageComponent(body)) if body is not None else b'',
         attached_message_ids=attached_message_ids)
