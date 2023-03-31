@@ -25,15 +25,26 @@ common_id = str(uuid.uuid1())
 counter = 0
 
 
-def create_event_id() -> EventID:
+def create_event_id(book_name: str,
+                    scope: str,
+                    start_timestamp: Optional[Timestamp] = None) -> EventID:
     """Creates event id as EventID class instance.
+
+    Args:
+        book_name: Name of the book.
+        scope: Scope (event stream) name.
+        start_timestamp: Start timestamp.
 
     Returns:
         EventID class instance with 'id' attribute.
     """
     global counter
     counter += 1
-    return EventID(id=f'{common_id}_{counter}')
+    return EventID(id=f'{common_id}_{counter}',
+                   book_name=book_name,
+                   scope=scope,
+                   start_timestamp=start_timestamp or create_timestamp()
+                   )
 
 
 def create_timestamp() -> Timestamp:
@@ -44,8 +55,10 @@ def create_timestamp() -> Timestamp:
 
 
 def create_event(event_id: Optional[EventID] = None,
-                 parent_id: Optional[EventID] = None,
+                 book_name: Optional[str] = '',
+                 scope: Optional[str] = '',
                  start_timestamp: Optional[Timestamp] = None,
+                 parent_id: Optional[EventID] = None,
                  end_timestamp: Optional[Timestamp] = None,
                  status: Union[str, int] = EventStatus.SUCCESS,
                  name: str = 'Event',
@@ -56,8 +69,10 @@ def create_event(event_id: Optional[EventID] = None,
 
     Args:
         event_id: ID of the event.
-        parent_id: Parent ID of the event.
+        book_name: Name of the book.
+        scope: Scope (event stream) name.
         start_timestamp: Start timestamp.
+        parent_id: Parent ID of the event.
         end_timestamp: End timestamp.
         status: Event status ('SUCCESS' or 'FAILED').
         name: Event name.
@@ -70,9 +85,8 @@ def create_event(event_id: Optional[EventID] = None,
     """
 
     return Event(
-        id=event_id or create_event_id(),
+        id=event_id or create_event_id(book_name, scope, start_timestamp),
         parent_id=parent_id,
-        start_timestamp=start_timestamp or create_timestamp(),
         end_timestamp=end_timestamp or create_timestamp(),
         status=status,  # type: ignore
         name=name,

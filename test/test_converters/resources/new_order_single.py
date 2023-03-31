@@ -40,7 +40,8 @@ new_order_single_message = Message(
                                  connection_id=ConnectionID(session_alias=session_alias),
                                  direction=Direction.FIRST,
                                  sequence=12,
-                                 subsequence=[1, 2]),
+                                 subsequence=[1, 2],
+                                 book_name='book'),
                              properties={'prop1': '1'}),
     fields={
         'OrdType': Value(simple_value='1'),
@@ -87,6 +88,7 @@ new_order_single_dict = {
         'direction': 'FIRST',
         'sequence': 12,
         'subsequence': [1, 2],
+        'book_name': 'book',
         'timestamp': None,
         'message_type': 'NewOrderSingle',
         'properties': {'prop1': '1'},
