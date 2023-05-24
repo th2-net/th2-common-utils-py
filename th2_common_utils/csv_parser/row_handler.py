@@ -14,8 +14,8 @@
 import logging
 from enum import Enum
 
-from test_case import TestCase
 from event_batcher import EventBatcher
+from test_case import TestCase
 
 
 class RowHandler:
@@ -74,7 +74,7 @@ class PredictionRowHandler(RowHandler):
             elif row_type == PredictionRowType.DATA:
                 self.current_test_case.append_row(row)
         except Exception as e:
-            logging.critical("Error while handling row:")
+            logging.critical('Error while handling row:')
             logging.exception(e)
             raise e
 

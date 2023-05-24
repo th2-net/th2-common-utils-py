@@ -12,8 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import json
 import ast
+import json
 
 
 class TestCase:
@@ -35,7 +35,7 @@ class TestCase:
     def convert_to_json(self) -> str:
         dict_list = []
         for row in self.rows:
-            dict_for_row = dict()
+            dict_for_row = {}
             for index, value in enumerate(row):
                 if value == '' or self.headers[index] == '':
                     continue

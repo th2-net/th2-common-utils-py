@@ -13,11 +13,12 @@
 #   limitations under the License.
 import logging
 
-from test_case import TestCase
-from params import Parameters
-from th2_common_utils.event_utils import create_event
 from th2_grpc_common.common_pb2 import Event
+
+from config import Configuration
+from test_case import TestCase
 from th2_common.schema.message.message_router import MessageRouter
+from th2_common_utils.event_utils import create_event
 
 
 class EventBatcher:
@@ -30,7 +31,7 @@ class EventBatcher:
         json_str = test_case.convert_to_json()
         event = create_event_from_json(json_str)
         size = calculate_size_of_event(event)
-        if self.current_events_size + size > Parameters.batch_size_bytes:
+        if self.current_events_size + size > Configuration.batch_size_bytes:
             self.send_current_events()
         self.current_events_size += size
         self.current_events_list.append(event)
@@ -40,7 +41,7 @@ class EventBatcher:
         self.current_events_list.append(json)
 
     def send_current_events(self):
-        logging.debug("Sent batch of size %i bytes with %i events",
+        logging.debug('Sent batch of size %i bytes with %i events',
                       self.current_events_size, len(self.current_events_list))
         send_batch(self.batch_router, self.current_events_list)
         self.current_events_list.clear()

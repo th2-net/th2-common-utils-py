@@ -13,7 +13,5 @@
 #   limitations under the License.
 
 
-class Parameters:
-    filename = '/home/fiodar.rekish/PycharmProjects/th2-common-utils-py/all_instruments.matrix.csv'
+class Configuration:
     batch_size_bytes = 100000
-

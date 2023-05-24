@@ -14,18 +14,18 @@
 
 import csv
 import logging
+import sys
 
-from row_handler import create_row_handler, RowHandler
-from params import Parameters
 from event_batcher import EventBatcher
+from row_handler import create_row_handler, RowHandler
 from th2_common.schema.factory.common_factory import CommonFactory
 from th2_common.schema.message.message_router import MessageRouter
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(message)s",
+    format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler("csv.log"),
+        logging.FileHandler('csv.log'),
         logging.StreamHandler()
     ]
 )
@@ -33,6 +33,10 @@ logging.basicConfig(
 
 def main():
     line_count = 0
+    if len(sys.argv) == 1:
+        logging.critical("Pass path to csv file as a console argument")
+        return
+    filename = sys.argv[1]
     try:
         cf = CommonFactory()
         event_batch_router: MessageRouter = cf.event_batch_router
@@ -40,24 +44,24 @@ def main():
         event_batcher = EventBatcher(event_batch_router)
         rh: RowHandler = create_row_handler(event_batcher)
     except Exception as e:
-        logging.critical("Exception during initialization - %s", e)
+        logging.critical('Exception during initialization - %s', e)
         logging.exception(e)
         return
 
     try:
-        with open(Parameters.filename, mode='r') as csv_file:
-            logging.info("Parsing %s", Parameters.filename)
+        with open(filename, mode='r') as csv_file:
+            logging.info('Parsing %s', filename)
 
             csv_reader = csv.reader(csv_file, delimiter=',')
             for row in csv_reader:
                 rh.handle_row(line_count, row)
                 line_count += 1
 
-            logging.info("Parsed %i lines in file %s", line_count, Parameters.filename)
+            logging.info('Parsed %i lines in file %s', line_count, filename)
     except Exception as e:
-        logging.critical("Exception at line %i (zero-based) of file %s - %s", line_count, Parameters.filename, e)
+        logging.critical('Exception at line %i (zero-based) of file %s - %s', line_count, filename, e)
         logging.exception(e)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
