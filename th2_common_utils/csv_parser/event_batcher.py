@@ -15,30 +15,22 @@ import logging
 
 from th2_grpc_common.common_pb2 import Event
 
-from config import Configuration
-from test_case import TestCase
 from th2_common.schema.message.message_router import MessageRouter
-from th2_common_utils.event_utils import create_event
 
 
 class EventBatcher:
-    def __init__(self, batch_router: MessageRouter):
+    def __init__(self, batch_router: MessageRouter, batch_size: int):
         self.current_events_list = []
         self.current_events_size = 0
         self.batch_router = batch_router
+        self.batch_size = batch_size
 
-    def consume_test_case(self, test_case: TestCase):
-        json_str = test_case.convert_to_json()
-        event = create_event_from_json(json_str)
+    def consume_event(self, event: Event):
         size = calculate_size_of_event(event)
-        if self.current_events_size + size > Configuration.batch_size_bytes:
+        if self.current_events_size + size > self.batch_size:
             self.send_current_events()
         self.current_events_size += size
         self.current_events_list.append(event)
-
-    def _add_test_case(self, json, size):
-        self.current_events_size += size
-        self.current_events_list.append(json)
 
     def send_current_events(self):
         logging.debug('Sent batch of size %i bytes with %i events',
@@ -50,14 +42,6 @@ class EventBatcher:
 
 def send_batch(batch_router: MessageRouter, message):
     batch_router.send(message)
-
-
-def create_event_from_json(json_str) -> Event:
-    return create_event(body=json_str)
-
-
-def calculate_size_of_string(s: str):
-    return len(s.encode('utf-8'))
 
 
 def calculate_size_of_event(event: Event):

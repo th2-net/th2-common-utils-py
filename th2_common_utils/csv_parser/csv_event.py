@@ -15,8 +15,12 @@
 import ast
 import json
 
+from th2_grpc_common.common_pb2 import Event
 
-class TestCase:
+from th2_common_utils.event_utils import create_event
+
+
+class CsvEvent:
 
     def __init__(self, name='', json_fields=None):
         if json_fields is None:
@@ -32,7 +36,7 @@ class TestCase:
     def append_row(self, row):
         self.rows.append(row)
 
-    def convert_to_json(self) -> str:
+    def _convert_to_json(self) -> str:
         dict_list = []
         for row in self.rows:
             dict_for_row = {}
@@ -45,7 +49,11 @@ class TestCase:
                     dict_for_row[self.headers[index]] = value
             if len(dict_for_row) != 0:
                 dict_list.append(dict_for_row)
-        return json.dumps(dict_list, indent=4)
+        return json.dumps(dict_list)
+
+    def convert_to_event(self) -> Event:
+        json_str = self._convert_to_json()
+        return create_event(body=json_str)
 
 
 def convert_inner_json(json_str):

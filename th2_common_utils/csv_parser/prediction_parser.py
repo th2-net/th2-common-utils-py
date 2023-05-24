@@ -16,6 +16,7 @@ import csv
 import logging
 import sys
 
+from config import Configuration
 from event_batcher import EventBatcher
 from row_handler import create_row_handler, RowHandler
 from th2_common.schema.factory.common_factory import CommonFactory
@@ -41,7 +42,7 @@ def main():
         cf = CommonFactory()
         event_batch_router: MessageRouter = cf.event_batch_router
 
-        event_batcher = EventBatcher(event_batch_router)
+        event_batcher = EventBatcher(event_batch_router, Configuration.batch_size_bytes)
         rh: RowHandler = create_row_handler(event_batcher)
     except Exception as e:
         logging.critical('Exception during initialization - %s', e)
