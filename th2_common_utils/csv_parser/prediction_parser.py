@@ -35,7 +35,7 @@ logging.basicConfig(
 def main():
     line_count = 0
     if len(sys.argv) == 1:
-        logging.critical("Pass path to csv file as a console argument")
+        logging.critical('Pass path to csv file as a console argument')
         return
     filename = sys.argv[1]
     try:

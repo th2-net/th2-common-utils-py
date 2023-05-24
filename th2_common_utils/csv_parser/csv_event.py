@@ -30,10 +30,10 @@ class CsvEvent:
         self.name = name
         self.json_fields = json_fields
 
-    def set_header(self, headers):
+    def set_header(self, headers: list):
         self.headers = headers
 
-    def append_row(self, row):
+    def append_row(self, row: list):
         self.rows.append(row)
 
     def _convert_to_json(self) -> str:
@@ -56,5 +56,5 @@ class CsvEvent:
         return create_event(body=json_str)
 
 
-def convert_inner_json(json_str):
+def convert_inner_json(json_str: str):
     return ast.literal_eval(json_str)

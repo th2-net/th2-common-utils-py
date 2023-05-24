@@ -88,6 +88,6 @@ class PredictionRowHandler(RowHandler):
                 return PredictionRowType.HEADER
 
 
-def create_row_handler(event_batcher) -> RowHandler:
+def create_row_handler(event_batcher: EventBatcher) -> RowHandler:
     # add more types of csv files here
     return PredictionRowHandler(event_batcher)
