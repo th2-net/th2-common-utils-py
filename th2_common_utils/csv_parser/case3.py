@@ -1,4 +1,4 @@
-from typing import List, Iterable, Any, Dict
+from typing import List, Iterable, Any
 
 from th2_data_services.data import Data
 from th2_data_services.interfaces import IStreamAdapter
@@ -16,15 +16,13 @@ class PredictionCsvStreamAdapter(IStreamAdapter):
         else:
             raise Exception('unknown csv file version')
 
-    def handler_1_0(self, stream: List[str]):
+    def handler_1_0(self, stream):
         # Read from TEST_CASE_START to TEST_CASE_END
         # 1st line -- test case start block
         # 2nd line -- header (can be different)
         # last line -- test case end block
         # some actions start from # e.g. #sleep
         # empty lines should be skiped
-        for line in stream:
-            pass
 
         yield http_event_stub_builder.build({'eventId': 123})
 
@@ -34,6 +32,3 @@ if __name__ == '__main__':
     print(data.metadata)
     print(data.len)
     print(data)
-
-    for event in data.limit(10):
-        print(event)
