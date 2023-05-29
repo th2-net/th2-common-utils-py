@@ -15,3 +15,6 @@
 
 class Configuration:
     batch_size_bytes = 100000
+    root_event_type = 'ModelPredictionRoot'
+    test_case_event_type = 'ModelPredictionTestCase'
+    action_event_type = 'ModelPredictionTestCaseAction'

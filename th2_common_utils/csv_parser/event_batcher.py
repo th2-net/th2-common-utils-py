@@ -28,16 +28,17 @@ class EventBatcher:
     def consume_event(self, event: Event):
         size = calculate_size_of_event(event)
         if self.current_events_size + size > self.batch_size:
-            self.send_current_events()
+            self.flush()
         self.current_events_size += size
         self.current_events_list.append(event)
 
-    def send_current_events(self):
-        logging.debug('Sent batch of size %i bytes with %i events',
-                      self.current_events_size, len(self.current_events_list))
-        send_batch(self.batch_router, self.current_events_list)
-        self.current_events_list.clear()
-        self.current_events_size = 0
+    def flush(self):
+        if self.current_events_size != 0:
+            send_batch(self.batch_router, self.current_events_list)
+            logging.debug('Sent batch of size %i bytes with %i events',
+                          self.current_events_size, len(self.current_events_list))
+            self.current_events_list.clear()
+            self.current_events_size = 0
 
 
 def send_batch(batch_router: MessageRouter, message):
