@@ -1,4 +1,3 @@
-#   Copyright 2022-2023 Exactpro (Exactpro Systems Limited)
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -11,7 +10,22 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from abc import abstractmethod
+
+from th2_data_services.interfaces import IStreamAdapter
 
 
-class Configuration:
-    batch_size_bytes = 100000
+class AbstractCsvStreamAdapter(IStreamAdapter):
+
+    def __init__(self, root_event_id, csv_version):
+        # root_event_id - root event id of all events that will be produced
+        self.root_event_id = root_event_id
+        self.csv_version = csv_version
+
+    @abstractmethod
+    def get_event_types(self):
+        pass
+
+    @abstractmethod
+    def get_root_event_type(self):
+        pass

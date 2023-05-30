@@ -16,7 +16,6 @@ import ast
 import json
 from typing import List
 
-from config import Configuration
 from th2_common_utils.event_utils import create_event, create_event_id
 
 
@@ -26,7 +25,6 @@ class CsvTestCaseEvent:
         if party_fields is None:
             party_fields = []
         self.headers = []
-        self.rows = []
         self.name = name
         self.json_fields = party_fields
         self.event_id = create_event_id()
@@ -35,7 +33,7 @@ class CsvTestCaseEvent:
     def set_header(self, headers: list):
         self.headers = headers
 
-    def convert_row_to_event(self, row: List[str]):
+    def convert_row_to_event(self, row: List[str], event_type: str):
         dict_for_row = {}
         for index, value in enumerate(row):
             if value == '' or self.headers[index] == '':
@@ -49,14 +47,14 @@ class CsvTestCaseEvent:
         return create_event(
             body=json_row,
             parent_id=self.event_id,
-            event_type=Configuration.action_event_type
+            event_type=event_type
         )
 
-    def convert_to_event(self):
+    def convert_to_event(self, event_type: str):
         body = {'caseName': self.name}
         return create_event(
             body=body,
-            event_type=Configuration.test_case_event_type,
+            event_type=event_type,
             event_id=self.event_id,
             parent_id=self.root_event_id
         )
