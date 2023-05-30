@@ -64,10 +64,10 @@ class InputCsvRulesV1:
 
 class InputCsvStreamAdapter(AbstractCsvStreamAdapter):
 
-    def __init__(self, root_event_id, csv_version='1.0'):
-        super().__init__(root_event_id, csv_version)
+    def __init__(self, csv_version='1.0'):
         self.rules = InputCsvRulesV1()
-        self.current_csv_event = CsvTestCaseEvent(root_event_id, party_fields=self.rules.party_column_names)
+        super().__init__(csv_version)
+        self.current_csv_event = CsvTestCaseEvent(self.root_event.id, party_fields=self.rules.party_column_names)
 
     def get_event_types(self):
         return self.rules.event_types
@@ -78,6 +78,7 @@ class InputCsvStreamAdapter(AbstractCsvStreamAdapter):
     def handle(self, stream: Iterable) -> dict:
         logging.info("Parsing input CSV version {}".format(self.csv_version))
         if self.csv_version == '1.0':
+            yield self.root_event
             yield from self.handler_1_0(stream)
         else:
             raise Exception('unknown csv file version')

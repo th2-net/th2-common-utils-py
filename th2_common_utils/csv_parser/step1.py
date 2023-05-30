@@ -12,18 +12,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import csv
 import logging
 import sys
+from typing import Iterable
 
-from th2_grpc_common.common_pb2 import Event, EventID
+from th2_data_services.data import Data
+from th2_grpc_common.common_pb2 import Event
 
 from config import Configuration
 from th2_common.schema.factory.common_factory import CommonFactory
 from th2_common.schema.message.message_router import MessageRouter
 from th2_common_utils.csv_parser.adapters.adapter_factory import create_adapter
 from th2_common_utils.csv_parser.event_batcher import EventBatcher
-from th2_common_utils.event_utils import create_event, create_event_id
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -35,45 +35,44 @@ logging.basicConfig(
 )
 
 
-def main():
-    if len(sys.argv) == 1:
-        logging.critical('No path to file found: pass path to CSV file as a console argument')
-        return
-    try:
-        filename = sys.argv[1]
-        root_event_id: EventID = create_event_id()
-        adapter = create_adapter(filename, root_event_id, csv_version="1.0")
-        root_event: Event = create_event(event_type=adapter.get_root_event_type(), event_id=root_event_id)
-        cf = CommonFactory()
-        event_batch_router: MessageRouter = cf.event_batch_router
-        event_batcher = EventBatcher(event_batch_router, Configuration.batch_size_bytes)
-    except Exception as e:
-        logging.critical('Exception during initialization - %s', e)
-        logging.exception(e)
-        return
-
+def stream_events_from_csv(filename: str):
+    adapter = create_adapter(filename, csv_version="1.0")
     event_counter = EventCounter(adapter.get_event_types())
-    try:
-        event_batcher.consume_event(root_event)
-        event_counter.count(root_event)
-        with open(filename, mode='r') as csv_file:
-            logging.info('Parsing %s', filename)
-            csv_reader = csv.reader(csv_file, delimiter=',')
-            data = adapter.handle(csv_reader)
 
-            event: Event
-            for event in data:
-                event_batcher.consume_event(event)
-                event_counter.count(event)
-        event_batcher.flush()
+    try:
+        for event in Data.from_csv(filename).map_stream(adapter):
+            event_counter.count(event)
+            yield event
+    except FileNotFoundError:
+        logging.critical('File %s not found', filename)
     except Exception as e:
         logging.critical('Exception during parsing file %s', filename, e)
-        logging.exception(e)
     finally:
-        print(event_counter.counting_dict)
         logging.info('Parsing finished with total %i events', event_counter.total())
         for event_type, value in event_counter.counting_dict.items():
             logging.info('Event type %s - parsed %i events', event_type, value)
+
+
+def batch_and_send(stream: Iterable[Event]):
+    cf = CommonFactory()
+    event_batch_router: MessageRouter = cf.event_batch_router
+    event_batcher = EventBatcher(event_batch_router, Configuration.batch_size_bytes)
+
+    for event in stream:
+        event_batcher.consume_event(event)
+    event_batcher.flush()
+
+
+def main():
+    try:
+        if len(sys.argv) == 1:
+            logging.critical('No path to file found: pass path to CSV file as a console argument')
+            raise ValueError('No path to file found: pass path to CSV file as a console argument')
+
+        filename = sys.argv[1]
+        batch_and_send(stream_events_from_csv(filename))
+    except Exception:
+        logging.critical('Exception with console args:', sys.argv)
 
 
 class EventCounter:

@@ -14,12 +14,14 @@ from abc import abstractmethod
 
 from th2_data_services.interfaces import IStreamAdapter
 
+from th2_common_utils import create_event
+
 
 class AbstractCsvStreamAdapter(IStreamAdapter):
 
-    def __init__(self, root_event_id, csv_version):
-        # root_event_id - root event id of all events that will be produced
-        self.root_event_id = root_event_id
+    def __init__(self, csv_version):
+        # root_event - root event of all events that will be produced
+        self.root_event = create_event(event_type=self.get_root_event_type())
         self.csv_version = csv_version
 
     @abstractmethod
