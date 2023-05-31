@@ -1,13 +1,16 @@
 import logging
+from datetime import datetime
 from enum import Enum
 from typing import Iterable
 
 from th2_common_utils.csv_parser.adapters.abstact_adapter import AbstractCsvStreamAdapter
 from th2_common_utils.csv_parser.csv_test_case_event import CsvTestCaseEvent
+from th2_common_utils.csv_parser.utils import get_filename_from_path
 
 
 class InputCsvRulesV1:
     def __init__(self):
+        self.root_event_name_pattern = 'Model input {}, {}'
         self.test_case_markers = {
             'TEST_CASE_START': self.InputRowType.TEST_CASE_START,
             'TEST_CASE_END': self.InputRowType.TEST_CASE_END,
@@ -64,9 +67,12 @@ class InputCsvRulesV1:
 
 class InputCsvStreamAdapter(AbstractCsvStreamAdapter):
 
-    def __init__(self, root_event_body, root_event_name: str, csv_version='1.0'):
+    def __init__(self, path: str, csv_version='1.0'):
         self.rules = InputCsvRulesV1()
-        super().__init__(csv_version, root_event_name, root_event_body)
+        root_event_name = self.rules.root_event_name_pattern.format(
+            get_filename_from_path(path), datetime.now()
+        )
+        super().__init__(csv_version, root_event_name, path)
         self.current_csv_event = CsvTestCaseEvent(self.root_event['eventId'], party_fields=self.rules.party_column_names)
 
     def get_event_types(self):

@@ -20,14 +20,14 @@ from th2_common_utils import create_event_id
 
 class AbstractCsvStreamAdapter(IStreamAdapter):
 
-    def __init__(self, csv_version: str, root_event_name: str, root_event_body):
+    def __init__(self, csv_version: str, root_event_name: str, path: str):
         # root_event - root event of all events that will be produced
         self.root_event = http_event_stub_builder.build({
             'eventName': root_event_name,
             'eventType': self.get_root_event_type(),
             'eventId': create_event_id().id,
             'parentEventId': None,
-            'body': root_event_body,
+            'body': {'sourceFile': path},
             'batchId': None
         })
         self.csv_version = csv_version
