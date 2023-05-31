@@ -21,6 +21,16 @@ from th2_data_services.data_source.lwdp.stub_builder import http_event_stub_buil
 from th2_common_utils.event_utils import create_event_id
 
 
+class ActionEventNameRule:
+    def __init__(self, pattern: str, keys: List[str]):
+        self.pattern = pattern
+        self.keys = keys
+
+    def compile(self, data: dict) -> str:
+        values = [data[key] for key in self.keys]
+        return self.pattern.format(*values)
+
+
 class CsvTestCaseEvent:
 
     def __init__(self, root_event_id, name='', party_fields=None):
@@ -35,7 +45,7 @@ class CsvTestCaseEvent:
     def set_header(self, headers: list):
         self.headers = headers
 
-    def convert_row_to_event(self, row: List[str], event_type: str) -> dict:
+    def convert_row_to_event(self, row: List[str], event_type: str, name_rule: ActionEventNameRule) -> dict:
         dict_for_row = {}
         for index, value in enumerate(row):
             if value == '' or self.headers[index] == '':
@@ -46,11 +56,13 @@ class CsvTestCaseEvent:
             else:
                 dict_for_row[self.headers[index]] = value
         json_row = json.dumps(dict_for_row)
+        event_name = name_rule.compile(dict_for_row)
         return http_event_stub_builder.build({
             'body': json_row,
             'parentEventId': self.event_id,
             'eventType': event_type,
-            'eventId': create_event_id()
+            'eventId': create_event_id(),
+            'eventName': event_name
         })
 
     def convert_to_event(self, event_type: str) -> dict:
@@ -59,7 +71,8 @@ class CsvTestCaseEvent:
             'body': body,
             'parentEventId': self.root_event_id,
             'eventType': event_type,
-            'eventId': self.event_id
+            'eventId': self.event_id,
+            'eventName': self.name
         })
 
 

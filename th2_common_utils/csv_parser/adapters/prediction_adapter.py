@@ -18,7 +18,7 @@ from enum import Enum
 from typing import Iterable
 
 from th2_common_utils.csv_parser.adapters.adapter_factory import AbstractCsvStreamAdapter
-from th2_common_utils.csv_parser.csv_test_case_event import CsvTestCaseEvent
+from th2_common_utils.csv_parser.csv_test_case_event import CsvTestCaseEvent, ActionEventNameRule
 
 
 class PredictionCsvRulesV1:
@@ -68,10 +68,11 @@ class PredictionCsvStreamAdapter(AbstractCsvStreamAdapter):
     def get_event_types(self) -> dict:
         return self.rules.event_types
 
-    def __init__(self, csv_version='1.0'):
+    def __init__(self, root_event_body: str, root_event_name: str, csv_version='1.0'):
         self.rules = PredictionCsvRulesV1()
-        super().__init__(csv_version)
-        self.current_csv_event = CsvTestCaseEvent(self.root_event['eventId'], party_fields=self.rules.party_column_names)
+        super().__init__(csv_version, root_event_name, root_event_body)
+        self.current_csv_event = CsvTestCaseEvent(self.root_event['eventId'],
+                                                  party_fields=self.rules.party_column_names)
 
     def handle(self, stream: Iterable) -> dict:
         logging.info("Parsing prediction CSV version {}".format(self.csv_version))
@@ -104,7 +105,10 @@ class PredictionCsvStreamAdapter(AbstractCsvStreamAdapter):
                 elif row_type == PredictionRowTypeV1.HEADER:
                     self.current_csv_event.set_header(row)
                 elif row_type == PredictionRowTypeV1.DATA:
-                    yield self.current_csv_event.convert_row_to_event(row, self.rules.event_types['action_event_type'])
+                    yield self.current_csv_event. \
+                        convert_row_to_event(row,
+                                             self.rules.event_types['action_event_type'],
+                                             ActionEventNameRule("{}, {}", ['MessageType', 'Action']))
                 elif row_type == PredictionRowTypeV1.EMPTY:
                     continue
         except Exception as e:
