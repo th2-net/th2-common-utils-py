@@ -13,7 +13,6 @@
 #   limitations under the License.
 
 import ast
-import json
 from typing import List
 
 from th2_data_services.data_source.lwdp.stub_builder import http_event_stub_builder
@@ -55,14 +54,14 @@ class CsvTestCaseEvent:
                 dict_for_row[self.headers[index]] = convert_inner_json(value)
             else:
                 dict_for_row[self.headers[index]] = value
-        json_row = json.dumps(dict_for_row)
         event_name = name_rule.compile(dict_for_row)
         return http_event_stub_builder.build({
-            'body': json_row,
-            'parentEventId': self.event_id,
+            'body': dict_for_row,
+            'parentEventId': self.event_id.id,
             'eventType': event_type,
-            'eventId': create_event_id(),
-            'eventName': event_name
+            'eventId': create_event_id().id,
+            'eventName': event_name,
+            'batchId': None
         })
 
     def convert_to_event(self, event_type: str) -> dict:
@@ -71,8 +70,9 @@ class CsvTestCaseEvent:
             'body': body,
             'parentEventId': self.root_event_id,
             'eventType': event_type,
-            'eventId': self.event_id,
-            'eventName': self.name
+            'eventId': self.event_id.id,
+            'eventName': self.name,
+            'batchId': None
         })
 
 

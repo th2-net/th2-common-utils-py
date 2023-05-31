@@ -21,7 +21,7 @@ from th2_common_utils.csv_parser.adapters.prediction_adapter import PredictionCs
 
 def create_adapter(path: str, csv_version: str) -> AbstractCsvStreamAdapter:
     filename = get_filename_from_path(path)
-    root_event_body = '{{"sourceFile": "{path}"}}'.format(path=path)
+    root_event_body = {'sourceFile': path}
 
     if path.endswith("matrix.csv") or path.endswith("Matrix.csv"):
         root_event_name = 'Model prediction {}, {}'.format(filename, datetime.now())

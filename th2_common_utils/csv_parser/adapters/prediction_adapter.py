@@ -68,7 +68,7 @@ class PredictionCsvStreamAdapter(AbstractCsvStreamAdapter):
     def get_event_types(self) -> dict:
         return self.rules.event_types
 
-    def __init__(self, root_event_body: str, root_event_name: str, csv_version='1.0'):
+    def __init__(self, root_event_body, root_event_name: str, csv_version='1.0'):
         self.rules = PredictionCsvRulesV1()
         super().__init__(csv_version, root_event_name, root_event_body)
         self.current_csv_event = CsvTestCaseEvent(self.root_event['eventId'],
