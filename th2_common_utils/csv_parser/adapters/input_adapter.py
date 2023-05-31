@@ -67,7 +67,7 @@ class InputCsvStreamAdapter(AbstractCsvStreamAdapter):
     def __init__(self, csv_version='1.0'):
         self.rules = InputCsvRulesV1()
         super().__init__(csv_version)
-        self.current_csv_event = CsvTestCaseEvent(self.root_event.id, party_fields=self.rules.party_column_names)
+        self.current_csv_event = CsvTestCaseEvent(self.root_event['eventId'], party_fields=self.rules.party_column_names)
 
     def get_event_types(self):
         return self.rules.event_types

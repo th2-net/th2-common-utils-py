@@ -13,8 +13,6 @@
 #   limitations under the License.
 import logging
 
-from th2_grpc_common.common_pb2 import Event
-
 from th2_common.schema.message.message_router import MessageRouter
 
 
@@ -25,7 +23,7 @@ class EventBatcher:
         self.batch_router = batch_router
         self.batch_size = batch_size
 
-    def consume_event(self, event: Event):
+    def consume_event(self, event: dict):
         size = calculate_size_of_event(event)
         if self.current_events_size + size > self.batch_size:
             self.flush()
@@ -45,5 +43,5 @@ def send_batch(batch_router: MessageRouter, message):
     batch_router.send(message)
 
 
-def calculate_size_of_event(event: Event):
-    return len(event.body)
+def calculate_size_of_event(event: dict):
+    return len(event['body'])

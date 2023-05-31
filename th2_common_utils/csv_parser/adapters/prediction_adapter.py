@@ -71,7 +71,7 @@ class PredictionCsvStreamAdapter(AbstractCsvStreamAdapter):
     def __init__(self, csv_version='1.0'):
         self.rules = PredictionCsvRulesV1()
         super().__init__(csv_version)
-        self.current_csv_event = CsvTestCaseEvent(self.root_event.id, party_fields=self.rules.party_column_names)
+        self.current_csv_event = CsvTestCaseEvent(self.root_event['eventId'], party_fields=self.rules.party_column_names)
 
     def handle(self, stream: Iterable) -> dict:
         logging.info("Parsing prediction CSV version {}".format(self.csv_version))
@@ -96,7 +96,7 @@ class PredictionCsvStreamAdapter(AbstractCsvStreamAdapter):
 
                 if row_type == PredictionRowTypeV1.TEST_CASE_START:
                     csv_event_name = row[1]
-                    self.current_csv_event = CsvTestCaseEvent(self.root_event.id, csv_event_name,
+                    self.current_csv_event = CsvTestCaseEvent(self.root_event['eventId'], csv_event_name,
                                                               party_fields=self.rules.party_column_names)
                     yield self.current_csv_event.convert_to_event(self.rules.event_types['test_case_event_type'])
                 elif row_type == PredictionRowTypeV1.TEST_CASE_END:

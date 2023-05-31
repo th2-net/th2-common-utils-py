@@ -17,7 +17,6 @@ import sys
 from typing import Iterable
 
 from th2_data_services.data import Data
-from th2_grpc_common.common_pb2 import Event
 
 from config import Configuration
 from th2_common.schema.factory.common_factory import CommonFactory
@@ -53,7 +52,7 @@ def stream_events_from_csv(filename: str):
             logging.info('Event type %s - parsed %i events', event_type, value)
 
 
-def batch_and_send(stream: Iterable[Event]):
+def batch_and_send(stream: Iterable[dict]):
     cf = CommonFactory()
     event_batch_router: MessageRouter = cf.event_batch_router
     event_batcher = EventBatcher(event_batch_router, Configuration.batch_size_bytes)
@@ -79,8 +78,8 @@ class EventCounter:
     def __init__(self, event_types: dict):
         self.counting_dict = {el: 0 for el in event_types.values()}
 
-    def count(self, event: Event):
-        self.counting_dict[event.type] += 1
+    def count(self, event: dict):
+        self.counting_dict[event['eventType']] += 1
 
     def total(self):
         return sum(self.counting_dict.values())

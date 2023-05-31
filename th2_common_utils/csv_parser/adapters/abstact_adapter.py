@@ -12,16 +12,19 @@
 #   limitations under the License.
 from abc import abstractmethod
 
+from th2_data_services.data_source.lwdp.stub_builder import http_event_stub_builder
 from th2_data_services.interfaces import IStreamAdapter
 
-from th2_common_utils import create_event
+from th2_common_utils import create_event_id
 
 
 class AbstractCsvStreamAdapter(IStreamAdapter):
 
     def __init__(self, csv_version):
         # root_event - root event of all events that will be produced
-        self.root_event = create_event(event_type=self.get_root_event_type())
+        self.root_event = http_event_stub_builder.build(
+            {'eventType': self.get_root_event_type(),
+             'eventId': create_event_id()})
         self.csv_version = csv_version
 
     @abstractmethod

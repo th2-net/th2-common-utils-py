@@ -16,7 +16,9 @@ import ast
 import json
 from typing import List
 
-from th2_common_utils.event_utils import create_event, create_event_id
+from th2_data_services.data_source.lwdp.stub_builder import http_event_stub_builder
+
+from th2_common_utils.event_utils import create_event_id
 
 
 class CsvTestCaseEvent:
@@ -33,7 +35,7 @@ class CsvTestCaseEvent:
     def set_header(self, headers: list):
         self.headers = headers
 
-    def convert_row_to_event(self, row: List[str], event_type: str):
+    def convert_row_to_event(self, row: List[str], event_type: str) -> dict:
         dict_for_row = {}
         for index, value in enumerate(row):
             if value == '' or self.headers[index] == '':
@@ -44,21 +46,22 @@ class CsvTestCaseEvent:
             else:
                 dict_for_row[self.headers[index]] = value
         json_row = json.dumps(dict_for_row)
-        return create_event(
-            body=json_row,
-            parent_id=self.event_id,
-            event_type=event_type
-        )
+        return http_event_stub_builder.build({
+            'body': json_row,
+            'parentEventId': self.event_id,
+            'eventType': event_type,
+            'eventId': create_event_id()
+        })
 
-    def convert_to_event(self, event_type: str):
+    def convert_to_event(self, event_type: str) -> dict:
         body = {'caseName': self.name}
-        return create_event(
-            body=body,
-            event_type=event_type,
-            event_id=self.event_id,
-            parent_id=self.root_event_id
-        )
+        return http_event_stub_builder.build({
+            'body': body,
+            'parentEventId': self.root_event_id,
+            'eventType': event_type,
+            'eventId': self.event_id
+        })
 
 
-def convert_inner_json(json_str: str):
+def convert_inner_json(json_str: str) -> str:
     return ast.literal_eval(json_str)
