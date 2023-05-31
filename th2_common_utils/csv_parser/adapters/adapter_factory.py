@@ -18,6 +18,8 @@ from th2_common_utils.csv_parser.adapters.prediction_adapter import PredictionCs
 
 
 def create_adapter(path: str, csv_version: str) -> AbstractCsvStreamAdapter:
+    # TODO - to be honest I think it's bad idea to have file name dependency.
+    #   These wiles can have any names.
 
     if path.endswith("matrix.csv") or path.endswith("Matrix.csv"):
         return PredictionCsvStreamAdapter(

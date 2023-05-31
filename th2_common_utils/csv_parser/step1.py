@@ -14,14 +14,17 @@
 
 import logging
 import sys
+from datetime import datetime
 from typing import Iterable
 
 from th2_data_services.data import Data
+from th2_data_services.event_tree import EventTreeCollection
 
 from config import Configuration
 from th2_common.schema.factory.common_factory import CommonFactory
 from th2_common.schema.message.message_router import MessageRouter
 from th2_common_utils.csv_parser.adapters.adapter_factory import create_adapter
+from th2_common_utils.csv_parser.adapters.prediction_adapter import PredictionCsvStreamAdapter
 from th2_common_utils.csv_parser.event_batcher import EventBatcher
 
 logging.basicConfig(
@@ -62,7 +65,7 @@ def batch_and_send(stream: Iterable[dict]):
     event_batcher.flush()
 
 
-def main():
+def step3():
     try:
         if len(sys.argv) == 1:
             logging.critical('No path to file found: pass path to CSV file as a console argument')
@@ -86,4 +89,17 @@ class EventCounter:
 
 
 if __name__ == '__main__':
-    main()
+    from th2_data_services.data_source.lwdp.event_tree.http_etc_driver import HttpETCDriver
+
+    filename =  'C:\\Users\\admin\\exactpro\\prj\\th2\\internal\\th2-common-utils-py\\th2_common_utils\\csv_parser\\all_instruments.matrix_f.csv'
+    adapter = PredictionCsvStreamAdapter(filename, csv_version="1.0")
+    data = Data.from_csv(filename).map_stream(adapter)
+    print(data)
+    # data.to_json('my_test.jsons')
+
+    etc = EventTreeCollection(HttpETCDriver())
+    etc.build(data)
+    etc.show()
+
+    # main()
+
