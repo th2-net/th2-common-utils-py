@@ -18,7 +18,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Iterable
 
-from th2_common_utils.csv_parser.adapters.adapter_factory import AbstractCsvStreamAdapter
+from th2_common_utils.csv_parser.adapters.abstact_adapter import AbstractCsvStreamAdapter
 from th2_common_utils.csv_parser.csv_test_case_event import CsvTestCaseEvent, ActionEventNameRule
 from th2_common_utils.csv_parser.utils import get_filename_from_path
 
