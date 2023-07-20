@@ -42,7 +42,8 @@ def _message_to_dict_convert_value(value: Value) -> Optional[DictMessageType]:
             field: _message_to_dict_convert_value(field_value)
             for field, field_value in value.message_value.fields.items()
         }
-
+    elif value_kind == "null_value":
+        return None
     else:
         raise TypeError(f'Expected simple_value, list_value or message_value. {type(value)} object received: {value}')
 
