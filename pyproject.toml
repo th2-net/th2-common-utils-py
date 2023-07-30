@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "th2-common-utils"
-version = "1.6.2"
+version = "1.6.3"
 description = "Python library with useful functions for developers and QA needs"
 authors = ["TH2-devs <th2-devs@exactprosystems.com>"]
 readme = "README.md"

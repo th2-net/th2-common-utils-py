@@ -1,5 +1,14 @@
 # Release notes
 
+## 1.6.3
+
+* Add backward compatibility for `create_event_id` function
+* Update workflows
+
+## 1.6.2
+
+* Fix event body creation
+
 ## 1.6.1
 
 * Added vulnerabilities scanning workflow

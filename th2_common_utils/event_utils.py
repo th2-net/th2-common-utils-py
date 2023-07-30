@@ -25,7 +25,7 @@ common_id = str(uuid.uuid1())
 counter = 0
 
 
-def create_event_id() -> EventID:
+def create_event_id(**kwargs) -> EventID:
     """Creates event id as EventID class instance.
 
     Returns:

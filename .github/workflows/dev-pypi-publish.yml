@@ -1,27 +1,37 @@
-name: Build and publish Python distributions to PyPI
+name: Dev build and publish Python distributions to PyPI
 
 on:
   push:
-    branches:
+    branches-ignore:
       - master
-    paths-ignore:
-      - README.md
+    paths:
+      - pyproject.toml
 
 env:
   DEP_PATH: requirements.txt
 
 jobs:
   build-n-publish:
-    name: Build and Python distributions to PyPI
+    name: Dev build and Python distributions to PyPI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+      - name: Get package version
+        id: package_version
+        run: echo '::set-output name=value::$(poetry version -s)'
+      - name: Build custom release version
+        id: release_version
+        run: echo ::set-output name=value::"${{ steps.package_version.outputs.value }}.dev${{ github.run_id }}"
+      - name: Show custom release version
+        run: echo ${{ steps.release_version.outputs.value }}
+      - name: Set custom release version for current build in pyproject.toml
+        run: poetry version ${{ steps.release_version.outputs.value }}
       - name: Set up Python 3.7
         uses: actions/setup-python@v4
         with:
           python-version: '3.7'
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
       - name: Run tests
         run: |
           poetry install
@@ -29,7 +39,7 @@ jobs:
       - name: Build package
         run: poetry build
       - name: Publish distribution to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
           password: ${{ secrets.PYPI_PASSWORD }}
