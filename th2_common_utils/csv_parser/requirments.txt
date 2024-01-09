@@ -1,0 +1,3 @@
+th2-common
+th2-grpc-common
+th2-data-services[lwdp2]~=2.0.0.dev
