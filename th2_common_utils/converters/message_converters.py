@@ -19,8 +19,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.json_format import ParseDict
 from google.protobuf.timestamp_pb2 import Timestamp
-from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
-    MessageMetadata, Value
+from th2_grpc_common.common_pb2 import (ConnectionID, Direction, EventID,
+                                        ListValue, Message, MessageID, MessageMetadata, NullValue, Value)
 
 from th2_common_utils.event_components import TableComponent, TreeTableComponent
 
@@ -42,6 +42,9 @@ def _message_to_dict_convert_value(value: Value) -> Optional[DictMessageType]:
             field: _message_to_dict_convert_value(field_value)
             for field, field_value in value.message_value.fields.items()
         }
+
+    elif value_kind == 'null_value':
+        return None
 
     else:
         raise TypeError(f'Expected simple_value, list_value or message_value. {type(value)} object received: {value}')
@@ -92,6 +95,8 @@ def _dict_to_message_convert_value(entity: Any) -> Value:
         return Value(list_value=ListValue(values=list(map(_dict_to_message_convert_value, entity))))
     elif isinstance(entity, dict):
         return Value(message_value=Message(fields={k: _dict_to_message_convert_value(v) for k, v in entity.items()}))
+    elif entity is None:
+        return Value(null_value=NullValue.NULL_VALUE)
 
     elif isinstance(entity, Value):
         return entity
