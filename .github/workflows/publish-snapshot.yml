@@ -15,7 +15,6 @@ jobs:
     with:
       release-type: development
       python-check-versions: "['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']"
-      test-enabled: false # TODO
       style-check-enabled: false #TODO
     secrets:
       pypi-password: ${{ secrets.PYPI_PASSWORD }}
