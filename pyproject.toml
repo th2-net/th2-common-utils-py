@@ -18,7 +18,7 @@ packages = [
 python = "^3.7"
 th2-grpc-common = "^4.5.1.dev10630970759"
 sortedcollections = "2.*"
-orjson = ">3.10.7,<4.0.0"
+orjson = ">3.10,<4.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
