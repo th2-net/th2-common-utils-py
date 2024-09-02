@@ -70,7 +70,7 @@ class AbstractTable:
         return {'type': self.type, 'rows': self.rows}
 
     @__dict__.setter
-    def __dict__(self, value) -> None:
+    def __dict__(self, value: dict) -> None:
         raise NotImplementedError
 
 
