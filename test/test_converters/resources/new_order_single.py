@@ -81,7 +81,7 @@ trading_party_dict = {
     ]
 }
 
-new_order_single_dict = {
+new_order_single_dict: dict[str, Any] = {
     'metadata': {
         'session_alias': 'kNglFzrW',
         'session_group': '',

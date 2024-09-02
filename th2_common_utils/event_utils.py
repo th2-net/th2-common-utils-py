@@ -55,8 +55,8 @@ def create_timestamp() -> Timestamp:
 
 
 def create_event(event_id: Optional[EventID] = None,
-                 book_name: Optional[str] = '',
-                 scope: Optional[str] = '',
+                 book_name: str = '',
+                 scope: str = '',
                  start_timestamp: Optional[Timestamp] = None,
                  parent_id: Optional[EventID] = None,
                  end_timestamp: Optional[Timestamp] = None,

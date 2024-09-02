@@ -65,7 +65,6 @@ class AbstractTable:
         """
         self.rows[table_name] = table
 
-    @property
     def __dict__(self) -> dict:
         return {'type': self.type, 'rows': self.rows}
 
