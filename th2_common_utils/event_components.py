@@ -65,7 +65,7 @@ class AbstractTable:
         """
         self.rows[table_name] = table
 
-    def __dict__(self) -> dict:
+    def __dict__(self) -> dict[str, Any]:
         return {'type': self.type, 'rows': self.rows}
 
 
