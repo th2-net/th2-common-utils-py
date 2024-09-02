@@ -71,7 +71,7 @@ class AbstractTable:
 
     @__dict__.setter
     def __dict__(self, value):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class TableComponent(AbstractTable):
