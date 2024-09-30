@@ -12,8 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
-    MessageMetadata, Value
+from typing import Any, Dict
+
+from th2_grpc_common.common_pb2 import (ConnectionID, Direction, EventID, ListValue, Message, MessageID,
+                                        MessageMetadata, Value)
+
 
 parent_event_id = EventID()
 session_alias = 'kNglFzrW'
@@ -81,7 +84,7 @@ trading_party_dict = {
     ]
 }
 
-new_order_single_dict = {
+new_order_single_dict: Dict[str, Any] = {
     'metadata': {
         'session_alias': 'kNglFzrW',
         'session_group': '',

@@ -69,6 +69,10 @@ class AbstractTable:
     def __dict__(self) -> dict:
         return {'type': self.type, 'rows': self.rows}
 
+    @__dict__.setter
+    def __dict__(self, value: dict) -> None:
+        raise NotImplementedError
+
 
 class TableComponent(AbstractTable):
 
