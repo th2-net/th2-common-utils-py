@@ -21,11 +21,11 @@ from sortedcontainers import SortedDict
 
 class MessageComponent:
 
-    def __init__(self, data) -> None:
+    def __init__(self, data: Any) -> None:
         self.type = 'message'
         self.data = str(data)
 
-    def __bytes__(self):
+    def __bytes__(self) -> bytes:
         return _create_event_body(self)
 
 
@@ -66,8 +66,12 @@ class AbstractTable:
         self.rows[table_name] = table
 
     @property
-    def __dict__(self):
+    def __dict__(self) -> dict:
         return {'type': self.type, 'rows': self.rows}
+
+    @__dict__.setter
+    def __dict__(self, value: dict) -> None:
+        raise NotImplementedError
 
 
 class TableComponent(AbstractTable):
