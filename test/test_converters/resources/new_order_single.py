@@ -12,8 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
-    MessageMetadata, Value
+from typing import Any, Dict
+
+from th2_grpc_common.common_pb2 import (ConnectionID, Direction, EventID, ListValue, Message, MessageID,
+                                        MessageMetadata, Value)
+
 
 parent_event_id = EventID()
 session_alias = 'kNglFzrW'
@@ -40,7 +43,8 @@ new_order_single_message = Message(
                                  connection_id=ConnectionID(session_alias=session_alias),
                                  direction=Direction.FIRST,
                                  sequence=12,
-                                 subsequence=[1, 2]),
+                                 subsequence=[1, 2],
+                                 book_name='book'),
                              properties={'prop1': '1'}),
     fields={
         'OrdType': Value(simple_value='1'),
@@ -80,13 +84,14 @@ trading_party_dict = {
     ]
 }
 
-new_order_single_dict = {
+new_order_single_dict: Dict[str, Any] = {
     'metadata': {
         'session_alias': 'kNglFzrW',
         'session_group': '',
         'direction': 'FIRST',
         'sequence': 12,
         'subsequence': [1, 2],
+        'book_name': 'book',
         'timestamp': None,
         'message_type': 'NewOrderSingle',
         'properties': {'prop1': '1'},

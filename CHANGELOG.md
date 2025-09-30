@@ -1,5 +1,14 @@
 # Release notes
 
+## 2.1.0
+* Add handling of `null_value` (`th2_grpc_common.common_pb2.Value` class) option for message converters
+
+## 2.0.1
+* Fix event body creation
+
+## 2.0.0
+* Transition to `books & pages` approach
+
 ## 1.6.3
 
 * Add backward compatibility for `create_event_id` function

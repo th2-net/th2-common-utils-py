@@ -19,8 +19,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from google.protobuf.json_format import ParseDict
 from google.protobuf.timestamp_pb2 import Timestamp
-from th2_grpc_common.common_pb2 import ConnectionID, Direction, EventID, ListValue, Message, MessageID, \
-    MessageMetadata, Value
+from th2_grpc_common.common_pb2 import (ConnectionID, Direction, EventID,
+                                        ListValue, Message, MessageID, MessageMetadata, NullValue, Value)
 
 from th2_common_utils.event_components import TableComponent, TreeTableComponent
 
@@ -43,6 +43,9 @@ def _message_to_dict_convert_value(value: Value) -> Optional[DictMessageType]:
             for field, field_value in value.message_value.fields.items()
         }
 
+    elif value_kind == 'null_value':
+        return None
+
     else:
         raise TypeError(f'Expected simple_value, list_value or message_value. {type(value)} object received: {value}')
 
@@ -51,7 +54,7 @@ def message_to_dict(message: Message) -> Dict[str, Optional[DictMessageType]]:
     """Converts th2-message to a dict.
     Fields of th2-message will be converted to a dict. You will lose all metadata.
     Args:
-        message: th2-message.
+        message: th2 message.
     Returns:
         th2-message fields (message.fields) as a dict. All nested entities will be also converted.
         Conversion rules:
@@ -71,7 +74,9 @@ def message_to_dict(message: Message) -> Dict[str, Optional[DictMessageType]]:
             'direction': Direction.Name(message_metadata.id.direction),
             'sequence': message_metadata.id.sequence,
             'subsequence': list(message_metadata.id.subsequence),
-            'timestamp': message_metadata.timestamp.ToDatetime() if message_metadata.HasField('timestamp') else None,
+            'book_name': message_metadata.id.book_name,
+            'timestamp': message_metadata.id.timestamp.ToDatetime() if message_metadata.id.HasField('timestamp')
+            else None,
             'message_type': message_metadata.message_type,
             'properties': dict(**message_metadata.properties),
             'protocol': message_metadata.protocol
@@ -90,6 +95,8 @@ def _dict_to_message_convert_value(entity: Any) -> Value:
         return Value(list_value=ListValue(values=list(map(_dict_to_message_convert_value, entity))))
     elif isinstance(entity, dict):
         return Value(message_value=Message(fields={k: _dict_to_message_convert_value(v) for k, v in entity.items()}))
+    elif entity is None:
+        return Value(null_value=NullValue.NULL_VALUE)
 
     elif isinstance(entity, Value):
         return entity
@@ -110,6 +117,7 @@ def dict_to_message(fields: dict,
                     direction: str = 'FIRST',
                     sequence: int = 0,
                     subsequence: Optional[List[int]] = None,
+                    book_name: Optional[str] = '',
                     timestamp: Optional[datetime.datetime] = None,
                     properties: Optional[Dict[str, str]] = None,
                     protocol: str = '') -> Message:
@@ -123,11 +131,12 @@ def dict_to_message(fields: dict,
         direction: Direction.
         sequence: Sequence.
         subsequence: Subsequence.
+        book_name: Name of the book.
         timestamp: Timestamp as datetime.datetime object.
         properties: Properties.
         protocol: Protocol.
     Returns:
-        th2-message with 'metadata' and 'parent_event_id'. All 'fields' nested entities will be converted.
+        th2 message with 'metadata' and 'parent_event_id'. All 'fields' nested entities will be converted.
         Conversion rules:
             str, int, float, Value - Value.simple_value
             list, ListValue - Value.list_value
@@ -143,14 +152,15 @@ def dict_to_message(fields: dict,
                                                                        session_group=session_group),
                                             direction=getattr(Direction, direction),
                                             sequence=sequence,
-                                            subsequence=subsequence if subsequence is not None else []),
+                                            subsequence=subsequence if subsequence is not None else [],
+                                            book_name=book_name),
                                message_type=message_type,
                                properties=properties,
                                protocol=protocol)
     if timestamp is not None:
         timestamp_pb = Timestamp()
         timestamp_pb.FromDatetime(timestamp)
-        metadata.timestamp.CopyFrom(timestamp_pb)
+        metadata.id.timestamp.CopyFrom(timestamp_pb)
 
     return Message(parent_event_id=parent_event_id,
                    metadata=metadata,
